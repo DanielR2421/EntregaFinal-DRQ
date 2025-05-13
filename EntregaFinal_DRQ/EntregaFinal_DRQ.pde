@@ -1,55 +1,55 @@
-// Visualización Poema "Viajar" de Gabriel García Márquez
-// Código base para un proyecto interactivo
+// // Código base para la Visualización delPoema "Viajar" de Gabriel Gamar
+// Tengo que hacerle varios cambios, esta es solo la versión inicial; la ia me ayudo a crear parte de las funciones del codigo
 
-// Variables para las imágenes de fondo
+// Estan serian las variables para las imágenes de fondo las voy a dibujar con un estilo de tinta china o como si fueran hechas con esfero , que sean algo sencillo pero interactivo
 PImage[] fondos;
 int escenaActual = 0;
 int totalEscenas = 5;
 
-// Variables para el pájaro
+// Variables para el pájaro; este tambien lo voy a insertar como una imagen dibujada
 float pajaroX, pajaroY;
 float pajaroVelocidadX, pajaroVelocidadY;
-int formaPajaro = 0; // 0 = pájaro, 1 = mariposa, 2 = avión, 3 = hoja, 4 = pluma
+int formaPajaro = 0; // 0 = pájaro, 1 = mariposa, 2 = avión, 3 = hoja, 4 = pluma; Esta es una posibilidad que se transforme en otras figuras o formas relacionadas con el poema pero, nose si vala la pena o que mas bien lo que se transforme sea el fondo 
 
-// Variables para los símbolos interactivos
+// Variables para los símbolos interactivos; Quiero tambien dibujar varios simbolos interactivos relacionados con cada estrofa en especifico, pero tengo que definir bien cuales serian
 float[][] posicionesSimbolo;
 int tamanoSimbolo = 30;
 
-// Variables para el poema
+// Variables para el poema; Esto si es bastante obvio, es para los textos que quiero que aparezcan como una luz que se prende como momentaneamente
 String[] estrofas;
 int estrofaVisible = 0;
 
-// Variables para la interacción con el mouse
-float radioInfluencia = 150; // Radio de influencia del mouse
-float factorRepulsion = 0.5; // Qué tan fuerte es la repulsión
+// Variables para la interacción con el mouse; la idea que que la figura del pajaro interactue con el mouse, y se aleje y cambie de dirección cada vez que uno se le acerque, que sea como un tipo de juego raro
+float radioInfluencia = 150; // Radio de influencia del mouse; que tan cerca interactua el pajaro con el mouse (valores temporales)
+float factorRepulsion = 0.5; // Qué tan fuerte es la repulsión; que tan imapactante es el cambio de dirección (valores temaporales)
 
 void setup() {
   size(800, 600);
   smooth();
   
-  // Inicializar arreglo para imágenes de fondo
+// variable PImage para la activación de los distintos fondos de acuerdo con cada estrofa
   fondos = new PImage[totalEscenas];
-  // Descomentar estas líneas cuando tengas las imágenes
+  // Aca toca descomentar estas líneas cuando tengas las imágenes
   // fondos[0] = loadImage("fondo1.jpg");
   // fondos[1] = loadImage("fondo2.jpg");
   // fondos[2] = loadImage("fondo3.jpg");
   // fondos[3] = loadImage("fondo4.jpg");
   // fondos[4] = loadImage("fondo5.jpg");
   
-  // Inicializar posición del pájaro
+  // Variables para inicializar posición del pájaro
   pajaroX = width/2;
   pajaroY = height/2;
   pajaroVelocidadX = 2;
   pajaroVelocidadY = 1;
   
-  // Inicializar posiciones de símbolos interactivos
+  //Variables para inicializar posiciones de símbolos interactivos, seria chevere que las posiciones sean aleatorias pero que estas, se cogenien con el fondo, eso lo tengo que hacer en el proceso de dibujo
   posicionesSimbolo = new float[totalEscenas][2];
   for (int i = 0; i < totalEscenas; i++) {
     posicionesSimbolo[i][0] = random(100, width-100);
     posicionesSimbolo[i][1] = random(100, height-100);
   }
   
-  // Cargar estrofas del poema "Viajar" de Gabriel García Márquez
+  // Cargar estrofas del poema "Viajar" de Gabriel Gamar; Esto no se si lo quiera mostrar asi con texto o con imagenes con otra fuente serifada mas adecuada con mi concepto e idea de como se vera el proyecto
   estrofas = new String[totalEscenas];
   estrofas[0] = "Viajar es marcharse de casa,\n" +
                 "es dejar los amigos,\n" +
@@ -88,7 +88,7 @@ void setup() {
 }
 
 void draw() {
-  // Dibujar fondo
+  // Dibujo fondo del fondo; esto es temporal aun la idea es que las lineas de los fondos se transformen en los fondos sobre los cuales se hace el cambio (osea que el fondo 1 se transforme en el fondo 2)
   if (fondos[escenaActual] != null) {
     image(fondos[escenaActual], 0, 0, width, height);
   } else {
@@ -96,17 +96,17 @@ void draw() {
     background(50 + escenaActual * 40, 100, 150);
   }
   
-  // Dibujar símbolo interactivo
+  // Dibujo del símbolo interactivo; esta parte del codigo se editara para albergar las imagenes interactivas de los simbolos, por lo que tocaria crear una clase especifica para estos y facilitar su interacción y comportamiento
   dibujarSimbolo(posicionesSimbolo[escenaActual][0], posicionesSimbolo[escenaActual][1]);
   
-  // Calcular interacción con el mouse
+  // Aca de debría de calcular la interacción con el mouse
   interactuarConMouse();
   
-  // Mover el pájaro
+  // EStos serian los cambios de movimiento del el pájaro o dibujo qque vaya a moverse
   pajaroX += pajaroVelocidadX;
   pajaroY += pajaroVelocidadY;
   
-  // Rebotar en los bordes
+  // Codigo para que rebote en los bordes del canvas
   if (pajaroX < 0 || pajaroX > width) {
     pajaroVelocidadX *= -1;
   }
@@ -114,44 +114,44 @@ void draw() {
     pajaroVelocidadY *= -1;
   }
   
-  // Dibujar el pájaro según su forma actual
+  // dibujo del el pájaro según su forma actual; esto es temporal y lo hizo la ia
   dibujarPajaro();
   
   // Mostrar estrofa actual
   mostrarEstrofa();
   
-  // Opcional: mostrar el radio de influencia (quitar en producción)
+  // Opcional: mostrar el radio de influencia (quitar en producción); no creo que esto lo ponga porque le quitya la gracia pero lo tengo ahia para saber hasta donde hay una acción
   // noFill();
   // stroke(255, 50);
   // ellipse(mouseX, mouseY, radioInfluencia*2, radioInfluencia*2);
 }
 
 void interactuarConMouse() {
-  // Calcular la distancia entre el pájaro y el mouse
+  // Calculo de la distancia de interacción entre el pájaro y el mouse
   float distancia = dist(pajaroX, pajaroY, mouseX, mouseY);
   
-  // Si el mouse está dentro del radio de influencia
+  // verificación sobre si el mouse está dentro del radio de influencia
   if (distancia < radioInfluencia) {
-    // Calcular vector de dirección desde el mouse hacia el pájaro
+    // Dirección del pajaro con relación al mouse; la ia me ayudo a cuadrar esto con mayor facilidad, pero toca ver como interactua al ser una imagen 
     float direccionX = pajaroX - mouseX;
     float direccionY = pajaroY - mouseY;
     
-    // Normalizar el vector (convertirlo a longitud 1)
+    // Transformación de variables de direción (cambio de dirección entre coordenadas X y Y) (convertirlo a longitud 1); la ia me ayudo con esto
     float longitud = sqrt(direccionX*direccionX + direccionY*direccionY);
     if (longitud > 0) {
       direccionX /= longitud;
       direccionY /= longitud;
     }
     
-    // Calcular la fuerza de repulsión basada en la distancia
-    // Cuanto más cerca, más fuerte es la repulsión
+    // Calculo de la fuerza de repulsión basada en la distancia
+    // Cuanto más cerca, más fuerte es la repulsión (la del mouse, los valores son provisionales porque toca ver como se comportaría con la imagen) 
     float fuerza = map(distancia, 0, radioInfluencia, factorRepulsion, 0);
     
-    // Aplicar la fuerza al pájaro
+    // Fuerza aplicada de la cercania del mouse l al pájaro ( que tanto afecta la cercania del mouse la direciión del pajaro)
     pajaroVelocidadX += direccionX * fuerza;
     pajaroVelocidadY += direccionY * fuerza;
     
-    // Limitar la velocidad máxima para que no se vuelva demasiado rápido
+    // Limitación de la velocidad máxima para que no se vuelva demasiado rápido (esto es para los cambios de dirección no sean tan abrubtos; la ia me ayudo con esto)
     float velocidadTotal = sqrt(pajaroVelocidadX*pajaroVelocidadX + pajaroVelocidadY*pajaroVelocidadY);
     if (velocidadTotal > 4) {
       pajaroVelocidadX = (pajaroVelocidadX / velocidadTotal) * 4;
@@ -172,6 +172,7 @@ void dibujarPajaro() {
   stroke(0);
   strokeWeight(1);
   
+  //Esto es provisional ya que no creo que lo llegue a necesitar con la imagen intersatda del pajaro pero iguelamente creo que es interesante dejarlo por ahora para tenerlo como base)
   switch(formaPajaro) {
     case 0: // Pájaro
       // Cuerpo
@@ -188,6 +189,7 @@ void dibujarPajaro() {
       }
       break;
       
+      //Esto también es provisional y nose si al fin y al cabo lo cambie
     case 1: // Mariposa
       // Alas
       ellipse(-10, -10, 20, 15);
@@ -237,6 +239,7 @@ void dibujarPajaro() {
   popMatrix();
 }
 
+//Esto probabalemente se modifique para insertar iamgenes de los simbolos y que cuadren mas con la estetica de los dibujos y de como se transmite la historia
 void dibujarSimbolo(float x, float y) {
   pushMatrix();
   translate(x, y);
@@ -245,7 +248,7 @@ void dibujarSimbolo(float x, float y) {
   stroke(200, 150, 0);
   strokeWeight(2);
   
-  // Diferentes símbolos para cada escena
+  // Diferentes símbolos para cada escena, esto probablemente se modifique ya que no se si esos simbolos vayan a ser aquellos que termine usando
   switch(escenaActual) {
     case 0: // Casa (para "marcharse de casa")
       rect(-15, -5, 30, 20);
@@ -279,37 +282,42 @@ void dibujarSimbolo(float x, float y) {
   popMatrix();
 }
 
+//Esto también probalamente sea provisional ya que el fondo cambiara paro no creo que la sea dibujado en processiong sino mas bien creo que sera insertado, aunque quiero buscar una forma de que se vea animado el cambio o la modificación del fondo de manera fluida y no se solo un corte / cambio como se ve actualmente
 void mostrarEstrofa() {
-  // Fondo semitransparente para el texto
+  // Fondo semitransparente para el texto (temporal)
   fill(0, 150);
   rect(50, height - 200, width - 100, 180, 10);
   
-  // Texto de la estrofa
+  // Texto de la estrofa (temporal)
   fill(255);
   textAlign(CENTER, CENTER);
   textSize(18);
   text(estrofas[escenaActual], width/2, height - 110);
   
-  // Instrucciones
+  // Instrucciones (temporal, probablemete sea otro tipo de texto / imagen insertada que cuadre con la estetica de los dibujos)
   textSize(12);
   text("Haz clic en el símbolo para cambiar de escena", width/2, height - 25);
 }
 
 void mousePressed() {
-  // Verificar si se hizo clic en el símbolo
+  // esta base si probablemente la use para ver las interacciónes con los eventos que suceden para que la historia se vea de manera interactiva
   float distancia = dist(mouseX, mouseY, 
                          posicionesSimbolo[escenaActual][0], 
                          posicionesSimbolo[escenaActual][1]);
   
   if (distancia < tamanoSimbolo) {
-    // Cambiar a la siguiente escena
+    // Cambio a la siguiente escena
     escenaActual = (escenaActual + 1) % totalEscenas;
     
-    // Transformar el pájaro
+    // Transformación del pájaro en otra forma (temporal, porque tal vez se vea mejor modificar el fondo)
     formaPajaro = escenaActual;
     
-    // Reposicionar el pájaro cerca del centro
+    // Reposición del pájaro cerca del centro, esto probablemete sea innecesario
     pajaroX = width/2 + random(-100, 100);
     pajaroY = height/2 + random(-100, 100);
   }
 }
+//Probablemente le agregue mas venetos con otras teclas para visualizar las escenas y tal vez volver la histotia mas dinamica porque esta algo sencilla de este modo
+//También probablemete le agregue alguna canción de fondo de un piano o algo de por el estilo que siga la estetica que me imagino de como  se relataria el poema
+//Quiero que este sea sencillo pero interactivo y pulido porloque debo investigar sobre como hacer las transiciones fluidas ydinamicas y que no se como un cmabio de pagina en un libro digital
+//También quiero saber si es posible hacer algo del estilo stop-motion para mostrar lo que quiero hacer pero se requeriran de mas imagenes con cambios mas espaciosos, por lo que quien sabe si seria mas facil hacer el dibujo de una vez en processing
