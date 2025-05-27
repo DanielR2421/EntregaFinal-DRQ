@@ -98,7 +98,7 @@ void setup() {
   
   // Inicializar sistema de audio
   try {
-    cancion = new SoundFile(this, "cancion.mp3"); // Asegúrate de tener este archivo
+    cancion = new SoundFile(this, "Das Versprechen.mp3"); // Asegúrate de tener este archivo
     cancion.loop(); // Reproducir en bucle
     println("Música cargada y reproduciéndose");
   } catch (Exception e) {
