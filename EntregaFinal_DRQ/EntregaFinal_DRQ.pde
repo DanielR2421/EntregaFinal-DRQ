@@ -56,6 +56,11 @@ boolean juegoIniciado = false;
 PFont fuenteTitulo, fuenteInstrucciones;
 float parpadeoBoton = 0;
 
+// Variables para pantalla final
+boolean mostrandoFin = false;
+float tiempoFin = 0;
+float duracionFin = 180; // 3 segundos a 60fps
+
 void cargarPoema() {
   estrofas = new String[totalEscenas];
   estrofas[0] = "Viajar es marcharse de casa,\n" +
@@ -99,12 +104,9 @@ void setup() {
   imageMode(CENTER);
   smooth(4);
   
-  println("=== INICIANDO CARGA DE RECURSOS ===");
-  
   // Inicializar sistema de audio
   try {
     cancion = new SoundFile(this, "Das Versprechen.mp3");
-    println("Música cargada correctamente");
   } catch (Exception e) {
     println("No se pudo cargar la música");
   }
@@ -145,6 +147,8 @@ void draw() {
   
   if (pantallaInicial) {
     mostrarPantallaInicial();
+  } else if (mostrandoFin) {
+    mostrarPantallaFin();
   } else if (!enTransicion) {
     // Dibujar fondo según la escena actual
     dibujarEscena(escenaActual);
@@ -186,18 +190,64 @@ void draw() {
         alpha = 0;
         ramasRecolectadas = 0;
         
-        // Si completamos todas las escenas, volver al inicio
+        // Si completamos todas las escenas, mostrar pantalla final
         if (escenaActual >= totalEscenas) {
-          escenaActual = 0;
-          pantallaInicial = true;
+          mostrandoFin = true;
+          tiempoFin = 0;
           juegoIniciado = false;
-          if (cancion != null) {
-            cancion.stop();
-          }
         } else {
           generarRamas();
         }
       }
+    }
+  }
+}
+
+void mostrarPantallaFin() {
+  // Mostrar fondo de la última escena
+  if (gifPajaros != null) {
+    gifPajaros.display();
+  }
+  
+  // Overlay semi-transparente con gradiente
+  noStroke();
+  for (int y = 0; y < height; y++) {
+    float inter = map(y, 0, height, 0.3, 0.8);
+    float alphaGrad = lerp(0, 220, inter);
+    fill(0, alphaGrad);
+    rect(0, y, width, 1);
+  }
+  
+  // TEXTO "FIN" con sombra estilo título
+  textFont(fuenteTitulo);
+  textAlign(CENTER, CENTER);
+  
+  // Sombra del título
+  fill(0, 200);
+  for (int j = 0; j < 360; j += 45) {
+    float rad = radians(j);
+    textSize(72);
+    text("FIN", 
+         width/2 + cos(rad) * 4,
+         height/2 + sin(rad) * 4);
+  }
+  
+  // Título principal
+  fill(255, 255, 255);
+  textSize(72);
+  text("FIN", width/2, height/2);
+  
+  // Incrementar contador de tiempo
+  tiempoFin++;
+  
+  // Después del tiempo especificado, volver al menú inicial
+  if (tiempoFin >= duracionFin) {
+    escenaActual = 0;
+    pantallaInicial = true;
+    mostrandoFin = false;
+    juegoIniciado = false;
+    if (cancion != null) {
+      cancion.stop();
     }
   }
 }
@@ -292,10 +342,8 @@ void mostrarPantallaInicial() {
   String instrucciones = "INSTRUCCIONES:\n\n" +
                         "• Guía al pájaro con el cursor del mouse\n" +
                         "• El pájaro evadirá tu cursor automáticamente\n" +
-                        "• Recolecta las ramas doradas para revelar los versos\n" +
-                        "• Cada rama recolectada muestra una línea del poema\n" +
-                        "• Completa cada escena para avanzar a la siguiente\n" +
-                        "• Disfruta del viaje poético a través de 5 escenas";
+                        "• Recolecta las ramas para revelar los versos\n" +
+                        "• Completa cada escena para avanzar a la siguiente\n";
   
   // Sombra de las instrucciones
   fill(0, 180);
@@ -519,13 +567,7 @@ void dibujarEscena(int escena) {
 }
 
 PImage cargarImagenConDiagnostico(String nombre) {
-  println("Cargando " + nombre + "...");
   PImage img = loadImage(nombre);
-  if (img == null) {
-    println("Error al cargar " + nombre);
-  } else {
-    println("Imagen " + nombre + " cargada correctamente - Tamaño: " + img.width + "x" + img.height);
-  }
   return img;
 }
 
@@ -665,7 +707,6 @@ class BackgroundGif {
     this.velocidad = velocidad;
     frames = new PImage[5];
     
-    println("Cargando fondo " + nombre + "...");
     for (int i = 0; i < 5; i++) {
       frames[i] = loadImage(nombre + (i+1) + ".png");
       if (frames[i] != null) {
@@ -715,7 +756,6 @@ class BirdAnimation {
     currentFrame = 0;
     anguloActual = 0;
     
-    println("Cargando frames del pájaro...");
     for (int i = 0; i < 5; i++) {
       frames[i] = cargarImagenConDiagnostico("pajaro" + (i+1) + ".png");
       if (frames[i] != null) {
