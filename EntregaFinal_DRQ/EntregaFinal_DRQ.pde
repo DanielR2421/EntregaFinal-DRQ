@@ -1,55 +1,57 @@
-// // Código base para la Visualización delPoema "Viajar" de Gabriel Gamar
-// Tengo que hacerle varios cambios, esta es solo la versión inicial; la ia me ayudo a crear parte de las funciones del codigo
+// Código corregido para la Visualización del Poema "Viajar" de Gabriel Gamar
 
-// Estan serian las variables para las imágenes de fondo las voy a dibujar con un estilo de tinta china o como si fueran hechas con esfero , que sean algo sencillo pero interactivo
-PImage[] fondos;
+// Variables para las imágenes de fondo
+PImage fondoEscena1;  // Escena 1: imagen única con zoom
+
+// GIFs de fondo para cada escena
+BackgroundGif gifTinta;
+BackgroundGif gifBosque;
+BackgroundGif gifMontana;
+BackgroundGif gifPajaros;
+
+// Pájaro animado (independiente de los fondos)
+BirdAnimation pajaro;
+
 int escenaActual = 0;
 int totalEscenas = 5;
 
-// Variables para el pájaro; este tambien lo voy a insertar como una imagen dibujada
-float pajaroX, pajaroY;
-float pajaroVelocidadX, pajaroVelocidadY;
-int formaPajaro = 0; // 0 = pájaro, 1 = mariposa, 2 = avión, 3 = hoja, 4 = pluma; Esta es una posibilidad que se transforme en otras figuras o formas relacionadas con el poema pero, nose si vala la pena o que mas bien lo que se transforme sea el fondo 
+// Variables para el zoom de la escena 1
+float zoomEscena1 = 2.5;
+float zoomMinimo = 1.0;
+float velocidadZoom = 0.008;
 
-// Variables para los símbolos interactivos; Quiero tambien dibujar varios simbolos interactivos relacionados con cada estrofa en especifico, pero tengo que definir bien cuales serian
+// Variables para los símbolos interactivos
 float[][] posicionesSimbolo;
 int tamanoSimbolo = 30;
 
-// Variables para el poema; Esto si es bastante obvio, es para los textos que quiero que aparezcan como una luz que se prende como momentaneamente
+// Variables para transiciones
+float alpha = 0;  // Opacidad para fade
+boolean enTransicion = false;
+int siguienteEscena = 0;
+float velocidadTransicion = 10;
+
+// Variables para interacción con mouse
+float radioInfluencia = 150;
+float factorRepulsion = 0.5;
+
+// Variables para música
+import processing.sound.*;
+SoundFile cancion;
+
+// Instrucciones
+String instruccion = "Haz clic en el círculo dorado para continuar";
+boolean mostrarInstruccion = true;
+float tiempoInstruccion = 5;  // segundos que se muestra
+
+// Variables para las estrofas del poema
 String[] estrofas;
-int estrofaVisible = 0;
 
-// Variables para la interacción con el mouse; la idea que que la figura del pajaro interactue con el mouse, y se aleje y cambie de dirección cada vez que uno se le acerque, que sea como un tipo de juego raro
-float radioInfluencia = 150; // Radio de influencia del mouse; que tan cerca interactua el pajaro con el mouse (valores temporales)
-float factorRepulsion = 0.5; // Qué tan fuerte es la repulsión; que tan imapactante es el cambio de dirección (valores temaporales)
+// Variables para la transición del texto
+float opacidadTexto = 0;
+float targetOpacidadTexto = 255;
+PFont fuentePoema;
 
-void setup() {
-  size(800, 600);
-  smooth();
-  
-// variable PImage para la activación de los distintos fondos de acuerdo con cada estrofa
-  fondos = new PImage[totalEscenas];
-  // Aca toca descomentar estas líneas cuando tengas las imágenes
-  // fondos[0] = loadImage("fondo1.jpg");
-  // fondos[1] = loadImage("fondo2.jpg");
-  // fondos[2] = loadImage("fondo3.jpg");
-  // fondos[3] = loadImage("fondo4.jpg");
-  // fondos[4] = loadImage("fondo5.jpg");
-  
-  // Variables para inicializar posición del pájaro
-  pajaroX = width/2;
-  pajaroY = height/2;
-  pajaroVelocidadX = 2;
-  pajaroVelocidadY = 1;
-  
-  //Variables para inicializar posiciones de símbolos interactivos, seria chevere que las posiciones sean aleatorias pero que estas, se cogenien con el fondo, eso lo tengo que hacer en el proceso de dibujo
-  posicionesSimbolo = new float[totalEscenas][2];
-  for (int i = 0; i < totalEscenas; i++) {
-    posicionesSimbolo[i][0] = random(100, width-100);
-    posicionesSimbolo[i][1] = random(100, height-100);
-  }
-  
-  // Cargar estrofas del poema "Viajar" de Gabriel Gamar; Esto no se si lo quiera mostrar asi con texto o con imagenes con otra fuente serifada mas adecuada con mi concepto e idea de como se vera el proyecto
+void cargarPoema() {
   estrofas = new String[totalEscenas];
   estrofas[0] = "Viajar es marcharse de casa,\n" +
                 "es dejar los amigos,\n" +
@@ -87,160 +89,187 @@ void setup() {
                 "viajar es regresar.";
 }
 
+void setup() {
+  size(800, 600);
+  imageMode(CENTER);
+  smooth(4);  // Mejorar calidad de renderizado
+  
+  println("=== INICIANDO CARGA DE RECURSOS ===");
+  
+  // Inicializar sistema de audio
+  try {
+    cancion = new SoundFile(this, "cancion.mp3"); // Asegúrate de tener este archivo
+    cancion.loop(); // Reproducir en bucle
+    println("Música cargada y reproduciéndose");
+  } catch (Exception e) {
+    println("No se pudo cargar la música - verifica que tengas 'cancion.mp3' en la carpeta del sketch");
+    println("Error: " + e.getMessage());
+  }
+  
+  // Cargar poema y configurar texto
+  cargarPoema();
+  setupTexto();
+  
+  // Cargar imagen única para escena 1
+  fondoEscena1 = cargarImagenConDiagnostico("nido1.png");
+  if (fondoEscena1 != null) {
+    fondoEscena1.resize(width, height);
+  }
+  
+  // Cargar fondos animados con diferentes velocidades
+  gifTinta = new BackgroundGif("tinta", 0.05, 1.0);    // Más lento
+  gifBosque = new BackgroundGif("bosque", 0.08, 1.0);  // Lento
+  gifMontana = new BackgroundGif("montana", 0.1, 1.2);  // Medio, escalado a 1.2
+  gifPajaros = new BackgroundGif("pajaros", 0.15, 1.1); // Normal, escalado a 1.1
+  
+  // Crear pájaro animado
+  pajaro = new BirdAnimation(80);  // Tamaño del pájaro: 80 píxeles
+  
+  // Inicializar símbolos
+  posicionesSimbolo = new float[totalEscenas][2];
+  for (int i = 0; i < totalEscenas; i++) {
+    posicionesSimbolo[i][0] = width - 50;  // X
+    posicionesSimbolo[i][1] = height - 50;  // Y
+  }
+}
+
 void draw() {
-  // Dibujo fondo del fondo; esto es temporal aun la idea es que las lineas de los fondos se transformen en los fondos sobre los cuales se hace el cambio (osea que el fondo 1 se transforme en el fondo 2)
-  if (fondos[escenaActual] != null) {
-    image(fondos[escenaActual], 0, 0, width, height);
-  } else {
-    // Fondo temporal hasta que se carguen las imágenes
-    background(50 + escenaActual * 40, 100, 150);
-  }
+  background(0);
   
-  // Dibujo del símbolo interactivo; esta parte del codigo se editara para albergar las imagenes interactivas de los simbolos, por lo que tocaria crear una clase especifica para estos y facilitar su interacción y comportamiento
-  dibujarSimbolo(posicionesSimbolo[escenaActual][0], posicionesSimbolo[escenaActual][1]);
-  
-  // Aca de debría de calcular la interacción con el mouse
-  interactuarConMouse();
-  
-  // EStos serian los cambios de movimiento del el pájaro o dibujo qque vaya a moverse
-  pajaroX += pajaroVelocidadX;
-  pajaroY += pajaroVelocidadY;
-  
-  // Codigo para que rebote en los bordes del canvas
-  if (pajaroX < 0 || pajaroX > width) {
-    pajaroVelocidadX *= -1;
-  }
-  if (pajaroY < 0 || pajaroY > height) {
-    pajaroVelocidadY *= -1;
-  }
-  
-  // dibujo del el pájaro según su forma actual; esto es temporal y lo hizo la ia
-  dibujarPajaro();
-  
-  // Mostrar estrofa actual
-  mostrarEstrofa();
-  
-  // Opcional: mostrar el radio de influencia (quitar en producción); no creo que esto lo ponga porque le quitya la gracia pero lo tengo ahia para saber hasta donde hay una acción
-  // noFill();
-  // stroke(255, 50);
-  // ellipse(mouseX, mouseY, radioInfluencia*2, radioInfluencia*2);
-}
-
-void interactuarConMouse() {
-  // Calculo de la distancia de interacción entre el pájaro y el mouse
-  float distancia = dist(pajaroX, pajaroY, mouseX, mouseY);
-  
-  // verificación sobre si el mouse está dentro del radio de influencia
-  if (distancia < radioInfluencia) {
-    // Dirección del pajaro con relación al mouse; la ia me ayudo a cuadrar esto con mayor facilidad, pero toca ver como interactua al ser una imagen 
-    float direccionX = pajaroX - mouseX;
-    float direccionY = pajaroY - mouseY;
+  if (!enTransicion) {
+    // Dibujar fondo según la escena actual
+    dibujarEscena(escenaActual);
     
-    // Transformación de variables de direción (cambio de dirección entre coordenadas X y Y) (convertirlo a longitud 1); la ia me ayudo con esto
-    float longitud = sqrt(direccionX*direccionX + direccionY*direccionY);
-    if (longitud > 0) {
-      direccionX /= longitud;
-      direccionY /= longitud;
-    }
+    // Dibujar símbolos interactivos
+    dibujarSimbolos();
     
-    // Calculo de la fuerza de repulsión basada en la distancia
-    // Cuanto más cerca, más fuerte es la repulsión (la del mouse, los valores son provisionales porque toca ver como se comportaría con la imagen) 
-    float fuerza = map(distancia, 0, radioInfluencia, factorRepulsion, 0);
+    // Actualizar y dibujar pájaro
+    pajaro.update();
+    pajaro.evadirMouse(mouseX, mouseY, radioInfluencia);
+    pajaro.display();
     
-    // Fuerza aplicada de la cercania del mouse l al pájaro ( que tanto afecta la cercania del mouse la direciión del pajaro)
-    pajaroVelocidadX += direccionX * fuerza;
-    pajaroVelocidadY += direccionY * fuerza;
+    // Mostrar texto
+    mostrarEstrofa();
     
-    // Limitación de la velocidad máxima para que no se vuelva demasiado rápido (esto es para los cambios de dirección no sean tan abrubtos; la ia me ayudo con esto)
-    float velocidadTotal = sqrt(pajaroVelocidadX*pajaroVelocidadX + pajaroVelocidadY*pajaroVelocidadY);
-    if (velocidadTotal > 4) {
-      pajaroVelocidadX = (pajaroVelocidadX / velocidadTotal) * 4;
-      pajaroVelocidadY = (pajaroVelocidadY / velocidadTotal) * 4;
-    }
-  }
-}
-
-void dibujarPajaro() {
-  pushMatrix();
-  translate(pajaroX, pajaroY);
-  
-  // Rotar hacia la dirección del movimiento
-  float angulo = atan2(pajaroVelocidadY, pajaroVelocidadX);
-  rotate(angulo);
-  
-  fill(255);
-  stroke(0);
-  strokeWeight(1);
-  
-  //Esto es provisional ya que no creo que lo llegue a necesitar con la imagen intersatda del pajaro pero iguelamente creo que es interesante dejarlo por ahora para tenerlo como base)
-  switch(formaPajaro) {
-    case 0: // Pájaro
-      // Cuerpo
-      ellipse(0, 0, 30, 15);
-      // Cabeza
-      ellipse(10, 0, 15, 15);
-      // Cola
-      triangle(-15, 0, -25, -8, -25, 8);
-      // Alas
-      if (frameCount % 20 < 10) {
-        triangle(0, 0, -5, -20, 5, -15);
+    // Mostrar instrucción si es necesario
+    if (mostrarInstruccion) {
+      if (tiempoInstruccion > 0) {
+        fill(255, 200);
+        textAlign(CENTER, TOP);
+        textSize(16);
+        text(instruccion, width/2, 20);
+        tiempoInstruccion -= 1.0/frameRate;
       } else {
-        triangle(0, 0, -5, -10, 5, -5);
+        mostrarInstruccion = false;
       }
-      break;
+    }
+  } else {
+    // Dibujar transición
+    if (alpha < 255) {
+      // Fade out
+      dibujarEscena(escenaActual);
+      fill(0, alpha);
+      rect(0, 0, width, height);
+      alpha += velocidadTransicion;
+    } else if (alpha < 510) {
+      // Fade in
+      dibujarEscena(siguienteEscena);
+      fill(0, 510 - alpha);
+      rect(0, 0, width, height);
+      alpha += velocidadTransicion;
       
-      //Esto también es provisional y nose si al fin y al cabo lo cambie
-    case 1: // Mariposa
-      // Alas
-      ellipse(-10, -10, 20, 15);
-      ellipse(-10, 10, 20, 15);
-      ellipse(10, -10, 20, 15);
-      ellipse(10, 10, 20, 15);
-      // Cuerpo
-      line(-15, 0, 15, 0);
-      ellipse(0, 0, 10, 5);
-      break;
-      
-    case 2: // Avión
-      // Forma de avión
-      beginShape();
-      vertex(15, 0);
-      vertex(0, -5);
-      vertex(-15, -5);
-      vertex(-10, 0);
-      vertex(-15, 5);
-      vertex(0, 5);
-      endShape(CLOSE);
-      // Alas
-      rect(-5, -15, 10, 30);
-      break;
-      
-    case 3: // Hoja
-      // Forma de hoja
-      beginShape();
-      vertex(0, -15);
-      bezierVertex(10, -10, 15, 0, 0, 15);
-      bezierVertex(-15, 0, -10, -10, 0, -15);
-      endShape();
-      // Nervio central
-      line(0, -15, 0, 15);
-      break;
-      
-    case 4: // Pluma
-      // Eje de la pluma
-      line(-15, 0, 15, 0);
-      // Barbas de la pluma
-      for (int i = -12; i < 12; i += 3) {
-        line(i, 0, i - 5, -10);
+      if (alpha >= 510) {
+        // Terminar transición
+        enTransicion = false;
+        escenaActual = siguienteEscena;
+        alpha = 0;
       }
-      break;
+    }
   }
   
-  popMatrix();
+  // Actualizar interacción con el mouse
+  interactuarConMouse();
 }
 
-//Esto probabalemente se modifique para insertar iamgenes de los simbolos y que cuadren mas con la estetica de los dibujos y de como se transmite la historia
-void dibujarSimbolo(float x, float y) {
+void setupTexto() {
+  fuentePoema = createFont("Georgia", 24);
+}
+
+void mostrarEstrofa() {
+  // Actualizar opacidad con transición suave
+  opacidadTexto = lerp(opacidadTexto, targetOpacidadTexto, 0.1);
+  
+  // Fondo degradado para el texto
+  rectMode(CORNER);
+  noStroke();
+  
+  // Gradiente vertical más oscuro
+  for (int y = height - 220; y < height; y++) {
+    float inter = map(y, height - 220, height, 0, 1);
+    float alphaGrad = lerp(0, 250, inter);
+    fill(0, alphaGrad * (opacidadTexto/255.0));
+    rect(0, y, width, 1);
+  }
+  
+  // Texto del poema con doble sombra para más contraste
+  textFont(fuentePoema);
+  textAlign(CENTER, CENTER);
+  
+  // Sombra exterior
+  fill(0, 200 * (opacidadTexto/255.0));
+  for (int i = 0; i < 360; i += 45) {
+    float rad = radians(i);
+    text(estrofas[escenaActual], 
+         width/2 + cos(rad) * 2,
+         height - 100 + sin(rad) * 2);
+  }
+  
+  // Texto principal con brillo
+  fill(255, 255, 220, opacidadTexto);
+  text(estrofas[escenaActual], width/2, height - 100);
+}
+
+void mousePressed() {
+  // Verificar si se hace clic en el símbolo
+  float distancia = dist(mouseX, mouseY, 
+                         posicionesSimbolo[escenaActual][0], 
+                         posicionesSimbolo[escenaActual][1]);
+  
+  if (distancia < tamanoSimbolo && !enTransicion) {
+    // Iniciar transición a la siguiente escena
+    siguienteEscena = (escenaActual + 1) % totalEscenas;
+    enTransicion = true;
+    alpha = 0;
+    
+    // Reiniciar el texto
+    opacidadTexto = 0;
+    targetOpacidadTexto = 255;
+    
+    // Reiniciar instrucción
+    if (siguienteEscena != 0) {
+      mostrarInstruccion = true;
+      tiempoInstruccion = 3;
+    }
+  }
+}
+
+void dibujarSimbolos() {
+  // Dibujar símbolo actual
+  float x = posicionesSimbolo[escenaActual][0];
+  float y = posicionesSimbolo[escenaActual][1];
+  
+  float distancia = dist(mouseX, mouseY, x, y);
+  
+  // Cambiar apariencia si el mouse está cerca
+  if (distancia < tamanoSimbolo) {
+    fill(250, 220, 50, 200);  // Más transparente
+    strokeWeight(3);
+  } else {
+    fill(250, 220, 50);
+    strokeWeight(2);
+  }
+  
+  // Dibujar símbolo
   pushMatrix();
   translate(x, y);
   
@@ -248,31 +277,30 @@ void dibujarSimbolo(float x, float y) {
   stroke(200, 150, 0);
   strokeWeight(2);
   
-  // Diferentes símbolos para cada escena, esto probablemente se modifique ya que no se si esos simbolos vayan a ser aquellos que termine usando
   switch(escenaActual) {
-    case 0: // Casa (para "marcharse de casa")
+    case 0: // Casa
       rect(-15, -5, 30, 20);
       triangle(-15, -5, 15, -5, 0, -20);
       break;
-    case 1: // Copa (para "saboreando una copa")
+    case 1: // Copa
       triangle(-10, 0, 10, 0, 0, 15);
       line(0, 15, 0, 20);
       ellipse(0, -5, 20, 10);
       break;
-    case 2: // Carta (para "escribir una carta")
+    case 2: // Carta
       rect(-15, -10, 30, 20);
       line(-10, -5, 10, -5);
       line(-10, 0, 5, 0);
       line(-10, 5, 0, 5);
       break;
-    case 3: // Mano (para "extendiendo la mano")
+    case 3: // Mano
       ellipse(0, 0, 15, 15);
       for (int i = 0; i < 5; i++) {
         float angulo = PI/2 - PI/8 * i;
         line(0, 0, cos(angulo) * 15, sin(angulo) * 15);
       }
       break;
-    case 4: // Postal (para "con una postal")
+    case 4: // Postal
       rect(-15, -10, 30, 20);
       line(-10, -5, 10, -5);
       rect(-10, 0, 5, 5);
@@ -282,42 +310,235 @@ void dibujarSimbolo(float x, float y) {
   popMatrix();
 }
 
-//Esto también probalamente sea provisional ya que el fondo cambiara paro no creo que la sea dibujado en processiong sino mas bien creo que sera insertado, aunque quiero buscar una forma de que se vea animado el cambio o la modificación del fondo de manera fluida y no se solo un corte / cambio como se ve actualmente
-void mostrarEstrofa() {
-  // Fondo semitransparente para el texto (temporal)
-  fill(0, 150);
-  rect(50, height - 200, width - 100, 180, 10);
-  
-  // Texto de la estrofa (temporal)
-  fill(255);
-  textAlign(CENTER, CENTER);
-  textSize(18);
-  text(estrofas[escenaActual], width/2, height - 110);
-  
-  // Instrucciones (temporal, probablemete sea otro tipo de texto / imagen insertada que cuadre con la estetica de los dibujos)
-  textSize(12);
-  text("Haz clic en el símbolo para cambiar de escena", width/2, height - 25);
-}
-
-void mousePressed() {
-  // esta base si probablemente la use para ver las interacciónes con los eventos que suceden para que la historia se vea de manera interactiva
+void interactuarConMouse() {
+  // Calcular distancia al símbolo actual
   float distancia = dist(mouseX, mouseY, 
                          posicionesSimbolo[escenaActual][0], 
                          posicionesSimbolo[escenaActual][1]);
   
+  // Cambiar cursor si está cerca del símbolo
   if (distancia < tamanoSimbolo) {
-    // Cambio a la siguiente escena
-    escenaActual = (escenaActual + 1) % totalEscenas;
-    
-    // Transformación del pájaro en otra forma (temporal, porque tal vez se vea mejor modificar el fondo)
-    formaPajaro = escenaActual;
-    
-    // Reposición del pájaro cerca del centro, esto probablemete sea innecesario
-    pajaroX = width/2 + random(-100, 100);
-    pajaroY = height/2 + random(-100, 100);
+    cursor(HAND);
+  } else {
+    cursor(ARROW);
   }
 }
-//Probablemente le agregue mas venetos con otras teclas para visualizar las escenas y tal vez volver la histotia mas dinamica porque esta algo sencilla de este modo
-//También probablemete le agregue alguna canción de fondo de un piano o algo de por el estilo que siga la estetica que me imagino de como  se relataria el poema
-//Quiero que este sea sencillo pero interactivo y pulido porloque debo investigar sobre como hacer las transiciones fluidas ydinamicas y que no se como un cmabio de pagina en un libro digital
-//También quiero saber si es posible hacer algo del estilo stop-motion para mostrar lo que quiero hacer pero se requeriran de mas imagenes con cambios mas espaciosos, por lo que quien sabe si seria mas facil hacer el dibujo de una vez en processing
+
+// Función auxiliar para dibujar una escena específica
+void dibujarEscena(int escena) {
+  if (escena == 0) {
+    if (fondoEscena1 != null) {
+      // Actualizar zoom
+      if (zoomEscena1 > zoomMinimo) {
+        zoomEscena1 -= velocidadZoom;
+        zoomEscena1 = max(zoomEscena1, zoomMinimo);
+      }
+      
+      float anchoZoom = width * zoomEscena1;
+      float altoZoom = height * zoomEscena1;
+      imageMode(CENTER);
+      image(fondoEscena1, width/2, height/2, anchoZoom, altoZoom);
+    }
+  } else {
+    switch(escena) {
+      case 1: 
+        if (gifTinta != null) gifTinta.display(); 
+        break;
+      case 2: 
+        if (gifBosque != null) gifBosque.display(); 
+        break;
+      case 3: 
+        if (gifMontana != null) gifMontana.display();
+        break;
+      case 4: 
+        if (gifPajaros != null) gifPajaros.display(); 
+        break;
+    }
+  }
+}
+
+// Función auxiliar para cargar imágenes
+PImage cargarImagenConDiagnostico(String nombre) {
+  println("Cargando " + nombre + "...");
+  PImage img = loadImage(nombre);
+  if (img == null) {
+    println("Error al cargar " + nombre);
+  } else {
+    println("Imagen " + nombre + " cargada correctamente - Tamaño: " + img.width + "x" + img.height);
+  }
+  return img;
+}
+
+// Función para limpiar recursos de audio al cerrar
+void stop() {
+  if (cancion != null) {
+    cancion.stop();
+  }
+}
+
+// ===== CLASES AUXILIARES =====
+
+class BackgroundGif {
+  PImage[] frames;
+  float currentFrame;
+  String nombre;
+  float velocidad;
+  
+  BackgroundGif(String nombre, float velocidad, float escala) {
+    this.nombre = nombre;
+    this.velocidad = velocidad;
+    frames = new PImage[5];
+    
+    println("Cargando fondo " + nombre + "...");
+    for (int i = 0; i < 5; i++) {
+      frames[i] = loadImage(nombre + (i+1) + ".png");
+      if (frames[i] != null) {
+        // Ajustar tamaño para llenar la pantalla
+        float imgRatio = (float)frames[i].width / frames[i].height;
+        float screenRatio = (float)width / height;
+        
+        int newWidth, newHeight;
+        if (imgRatio > screenRatio) {
+          newHeight = height;
+          newWidth = (int)(height * imgRatio);
+        } else {
+          newWidth = width;
+          newHeight = (int)(width / imgRatio);
+        }
+        
+        // Aplicar escala
+        newWidth = (int)(newWidth * escala);
+        newHeight = (int)(newHeight * escala);
+        
+        frames[i].resize(newWidth, newHeight);
+      }
+    }
+    currentFrame = 0;
+  }
+  
+  void display() {
+    int frameIndex = floor(currentFrame);
+    if (frames[frameIndex] != null) {
+      imageMode(CENTER);
+      image(frames[frameIndex], width/2, height/2);
+      
+      // Actualizar frame con velocidad suave
+      currentFrame = (currentFrame + velocidad) % frames.length;
+    }
+  }
+  
+  void reset() {
+    currentFrame = 0;
+  }
+}
+
+class BirdAnimation {
+  PImage[] frames;
+  float x, y;
+  float velocidadX, velocidadY;
+  float currentFrame;
+  float tamano;
+  float anguloActual;
+  float velocidadBase = 2;
+  
+  BirdAnimation(float tamano) {
+    this.tamano = tamano;
+    frames = new PImage[5];
+    currentFrame = 0;
+    anguloActual = 0;
+    
+    // Cargar frames del pájaro
+    println("Cargando frames del pájaro...");
+    for (int i = 0; i < 5; i++) {
+      frames[i] = cargarImagenConDiagnostico("pajaro" + (i+1) + ".png");
+      if (frames[i] != null) {
+        frames[i].resize(int(tamano), int(tamano));
+      }
+    }
+    
+    // Posición inicial
+    reset();
+  }
+  
+  void update() {
+    // Actualizar frame
+    currentFrame = (currentFrame + 0.2) % frames.length;
+    
+    // Aplicar velocidad
+    x += velocidadX;
+    y += velocidadY;
+    
+    // Rebotar en los bordes - llegar exactamente al borde
+    if (x <= tamano/2) {
+      x = tamano/2;
+      velocidadX = abs(velocidadX);  // Forzar dirección positiva
+    }
+    if (x >= width - tamano/2) {
+      x = width - tamano/2;
+      velocidadX = -abs(velocidadX);  // Forzar dirección negativa
+    }
+    if (y <= tamano/2) {
+      y = tamano/2;
+      velocidadY = abs(velocidadY);  // Forzar dirección positiva
+    }
+    if (y >= height - tamano/2) {
+      y = height - tamano/2;
+      velocidadY = -abs(velocidadY);  // Forzar dirección negativa
+    }
+    
+    // Mantener velocidad base constante
+    float velocidadActual = sqrt(velocidadX*velocidadX + velocidadY*velocidadY);
+    if (velocidadActual < 0.5) {
+      // Si se detiene demasiado, darle un impulso aleatorio
+      float angulo = random(TWO_PI);
+      velocidadX = cos(angulo) * velocidadBase;
+      velocidadY = sin(angulo) * velocidadBase;
+    } else if (velocidadActual != velocidadBase) {
+      // Normalizar velocidad para mantenerla constante
+      float factor = velocidadBase / velocidadActual;
+      velocidadX *= factor;
+      velocidadY *= factor;
+    }
+    
+    // Actualizar ángulo suavemente
+    if (abs(velocidadX) > 0.1 || abs(velocidadY) > 0.1) {
+      float anguloObjetivo = atan2(velocidadY, velocidadX);
+      float diferencia = anguloObjetivo - anguloActual;
+      while (diferencia > PI) diferencia -= TWO_PI;
+      while (diferencia < -PI) diferencia += TWO_PI;
+      anguloActual += diferencia * 0.1;
+    }
+  }
+  
+  void display() {
+    if (frames[floor(currentFrame)] != null) {
+      pushMatrix();
+      translate(x, y);
+      rotate(anguloActual);
+      imageMode(CENTER);
+      image(frames[floor(currentFrame)], 0, 0);
+      popMatrix();
+    }
+  }
+  
+  void reset() {
+    x = width/2;
+    y = height/2;
+    float angulo = random(TWO_PI);
+    velocidadX = cos(angulo) * velocidadBase;
+    velocidadY = sin(angulo) * velocidadBase;
+    currentFrame = 0;
+  }
+  
+  void evadirMouse(float mx, float my, float radio) {
+    float dx = x - mx;
+    float dy = y - my;
+    float distancia = sqrt(dx*dx + dy*dy);
+    
+    if (distancia < radio) {
+      float factor = (radio - distancia) / radio * 0.2;
+      velocidadX += (dx/distancia) * factor;
+      velocidadY += (dy/distancia) * factor;
+    }
+  }
+}
