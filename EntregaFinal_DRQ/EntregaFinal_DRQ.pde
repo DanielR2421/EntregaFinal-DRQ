@@ -1,5 +1,5 @@
-// Código modificado para la Visualización del Poema "Viajar" de Gabriel Gamar
-// Modo recolección de ramas al estilo Mario Bros
+// Código simplificado para la Visualización del Poema "Viajar" de Gabriel Gamar
+// Modo recolección de ramas - versión simplificada
 
 // Variables para las imágenes de fondo
 PImage fondoEscena1;  // Escena 1: imagen única con zoom
@@ -10,7 +10,7 @@ BackgroundGif gifBosque;
 BackgroundGif gifMontana;
 BackgroundGif gifPajaros;
 
-// Pájaro animado (independiente de los fondos)
+// Pájaro animado
 BirdAnimation pajaro;
 
 int escenaActual = 0;
@@ -23,18 +23,18 @@ float velocidadZoom = 0.008;
 
 // Variables para las ramas recolectables
 ArrayList<Rama> ramas;
-int ramasNecesarias = 5;  // Ramas que se necesitan recoger por escena
+int ramasNecesarias = 5;
 int ramasRecolectadas = 0;
+PImage imagenRama;  // Imagen simple para las ramas
 
 // Variables para transiciones
-float alpha = 0;  // Opacidad para fade
+float alpha = 0;
 boolean enTransicion = false;
 int siguienteEscena = 0;
 float velocidadTransicion = 10;
 
 // Variables para interacción con mouse
 float radioInfluencia = 150;
-float factorRepulsion = 0.5;
 
 // Variables para música
 import processing.sound.*;
@@ -43,7 +43,7 @@ SoundFile cancion;
 // Instrucciones
 String instruccion = "Guía al pájaro con el mouse para recoger las ramas doradas";
 boolean mostrarInstruccion = true;
-float tiempoInstruccion = 5;  // segundos que se muestra
+float tiempoInstruccion = 5;
 
 // Variables para las estrofas del poema
 String[] estrofas;
@@ -97,23 +97,28 @@ void cargarPoema() {
 void setup() {
   size(800, 600);
   imageMode(CENTER);
-  smooth(4);  // Mejorar calidad de renderizado
+  smooth(4);
   
   println("=== INICIANDO CARGA DE RECURSOS ===");
   
   // Inicializar sistema de audio
   try {
-    cancion = new SoundFile(this, "Das Versprechen.mp3"); // Asegúrate de tener este archivo
-    cancion.loop(); // Reproducir en bucle
+    cancion = new SoundFile(this, "Das Versprechen.mp3");
+    cancion.loop();
     println("Música cargada y reproduciéndose");
   } catch (Exception e) {
-    println("No se pudo cargar la música - verifica que tengas 'cancion.mp3' en la carpeta del sketch");
-    println("Error: " + e.getMessage());
+    println("No se pudo cargar la música");
   }
   
   // Cargar poema y configurar texto
   cargarPoema();
   setupTexto();
+  
+  // Cargar imagen de rama (archivo simple: "rama.png")
+  imagenRama = cargarImagenConDiagnostico("rama.png");
+  if (imagenRama != null) {
+    imagenRama.resize(60, 60); // Tamaño fijo para simplicidad
+  }
   
   // Cargar imagen única para escena 1
   fondoEscena1 = cargarImagenConDiagnostico("nido1.png");
@@ -121,14 +126,14 @@ void setup() {
     fondoEscena1.resize(width, height);
   }
   
-  // Cargar fondos animados con diferentes velocidades
-  gifTinta = new BackgroundGif("tinta", 0.05, 1.0);    // Más lento
-  gifBosque = new BackgroundGif("bosque", 0.08, 1.0);  // Lento
-  gifMontana = new BackgroundGif("montana", 0.1, 1.2);  // Medio, escalado a 1.2
-  gifPajaros = new BackgroundGif("pajaros", 0.15, 1.1); // Normal, escalado a 1.1
+  // Cargar fondos animados
+  gifTinta = new BackgroundGif("tinta", 0.05, 1.0);
+  gifBosque = new BackgroundGif("bosque", 0.08, 1.0);
+  gifMontana = new BackgroundGif("montana", 0.1, 1.2);
+  gifPajaros = new BackgroundGif("pajaros", 0.15, 1.1);
   
   // Crear pájaro animado
-  pajaro = new BirdAnimation(80);  // Tamaño del pájaro: 80 píxeles
+  pajaro = new BirdAnimation(80);
   
   // Inicializar sistema de ramas y efectos
   ramas = new ArrayList<Rama>();
@@ -157,11 +162,8 @@ void draw() {
     // Actualizar y dibujar efectos de partículas
     actualizarEfectos();
     
-    // Mostrar texto
+    // Mostrar texto del poema en la parte inferior
     mostrarEstrofa();
-    
-    // Mostrar contador de ramas
-    mostrarContador();
     
     // Mostrar instrucción si es necesario
     if (mostrarInstruccion) {
@@ -178,25 +180,20 @@ void draw() {
   } else {
     // Dibujar transición
     if (alpha < 255) {
-      // Fade out
       dibujarEscena(escenaActual);
       fill(0, alpha);
       rect(0, 0, width, height);
       alpha += velocidadTransicion;
     } else if (alpha < 510) {
-      // Fade in
       dibujarEscena(siguienteEscena);
       fill(0, 510 - alpha);
       rect(0, 0, width, height);
       alpha += velocidadTransicion;
       
       if (alpha >= 510) {
-        // Terminar transición
         enTransicion = false;
         escenaActual = siguienteEscena;
         alpha = 0;
-        
-        // Reiniciar sistema de ramas para la nueva escena
         ramasRecolectadas = 0;
         generarRamas();
       }
@@ -205,7 +202,7 @@ void draw() {
 }
 
 void setupTexto() {
-  fuentePoema = createFont("Georgia", 24);
+  fuentePoema = createFont("Georgia", 20);
 }
 
 void mostrarEstrofa() {
@@ -216,62 +213,58 @@ void mostrarEstrofa() {
   rectMode(CORNER);
   noStroke();
   
-  // Gradiente vertical más oscuro
-  for (int y = height - 220; y < height; y++) {
-    float inter = map(y, height - 220, height, 0, 1);
-    float alphaGrad = lerp(0, 250, inter);
+  // Gradiente vertical
+  for (int y = height - 180; y < height; y++) {
+    float inter = map(y, height - 180, height, 0, 1);
+    float alphaGrad = lerp(0, 220, inter);
     fill(0, alphaGrad * (opacidadTexto/255.0));
     rect(0, y, width, 1);
   }
   
-  // Texto del poema con doble sombra para más contraste
+  // Dividir estrofa en versos
+  String[] versos = dividirEnVersos(estrofas[escenaActual]);
+  
   textFont(fuentePoema);
   textAlign(CENTER, CENTER);
   
-  // Sombra exterior
-  fill(0, 200 * (opacidadTexto/255.0));
-  for (int i = 0; i < 360; i += 45) {
-    float rad = radians(i);
-    text(estrofas[escenaActual], 
-         width/2 + cos(rad) * 2,
-         height - 100 + sin(rad) * 2);
+  // Mostrar solo los versos recolectados (progreso visual)
+  float yTexto = height - 130;
+  float espaciadoLinea = 22;
+  
+  for (int i = 0; i < versos.length; i++) {
+    if (i < ramasRecolectadas) {
+      // Verso visible - color dorado brillante
+      // Sombra
+      fill(0, 150 * (opacidadTexto/255.0));
+      text(versos[i], width/2 + 2, yTexto + 2);
+      
+      // Texto principal
+      fill(250, 220, 50, opacidadTexto);
+      text(versos[i], width/2, yTexto);
+    } else {
+      // Verso no visible - completamente oculto
+      // No se muestra nada
+    }
+    yTexto += espaciadoLinea;
   }
   
-  // Texto principal con brillo
-  fill(255, 255, 220, opacidadTexto);
-  text(estrofas[escenaActual], width/2, height - 100);
+  // Mostrar contador en esquina superior derecha
+  fill(255, 255, 255, 200);
+  textAlign(RIGHT, TOP);
+  textSize(16);
+  text("Versos revelados: " + ramasRecolectadas + "/" + versos.length, width - 20, 20);
 }
 
-void mostrarContador() {
-  // Mostrar progreso de recolección
-  fill(255, 220);
-  textAlign(RIGHT, TOP);
-  textSize(18);
-  text("Ramas: " + ramasRecolectadas + "/" + ramasNecesarias, width - 20, 20);
-  
-  // Barra de progreso
-  float progreso = (float)ramasRecolectadas / ramasNecesarias;
-  float anchoTotal = 200;
-  float x = width - anchoTotal - 20;
-  float y = 50;
-  
-  // Fondo de la barra
-  fill(0, 100);
-  rect(x, y, anchoTotal, 15);
-  
-  // Progreso
-  fill(250, 220, 50);
-  rect(x, y, anchoTotal * progreso, 15);
-  
-  // Borde
-  noFill();
-  stroke(255);
-  strokeWeight(1);
-  rect(x, y, anchoTotal, 15);
+String[] dividirEnVersos(String estrofa) {
+  return estrofa.split("\\n");
 }
 
 void generarRamas() {
   ramas.clear();
+  
+  // Número de ramas = número de versos en la estrofa actual
+  String[] versos = dividirEnVersos(estrofas[escenaActual]);
+  ramasNecesarias = versos.length;
   
   // Generar ramas distribuidas por la pantalla
   for (int i = 0; i < ramasNecesarias; i++) {
@@ -281,7 +274,7 @@ void generarRamas() {
     
     do {
       x = random(60, width - 60);
-      y = random(60, height - 180); // Evitar la zona del texto
+      y = random(60, height - 200); // Evitar la zona del texto
       posicionValida = true;
       
       // Verificar que no esté muy cerca de otras ramas
@@ -317,8 +310,7 @@ void verificarColisiones() {
     Rama rama = ramas.get(i);
     float distancia = dist(pajaro.x, pajaro.y, rama.x, rama.y);
     
-    if (distancia < 40 && rama.activa) { // Radio de colisión
-      // Rama recolectada
+    if (distancia < 40 && rama.activa) {
       rama.activa = false;
       ramasRecolectadas++;
       
@@ -327,16 +319,12 @@ void verificarColisiones() {
       
       // Verificar si se completó la escena
       if (ramasRecolectadas >= ramasNecesarias) {
-        // Iniciar transición a la siguiente escena
         siguienteEscena = (escenaActual + 1) % totalEscenas;
         enTransicion = true;
         alpha = 0;
-        
-        // Reiniciar el texto
         opacidadTexto = 0;
         targetOpacidadTexto = 255;
         
-        // Reiniciar instrucción
         if (siguienteEscena != 0) {
           mostrarInstruccion = true;
           tiempoInstruccion = 3;
@@ -358,11 +346,9 @@ void actualizarEfectos() {
   }
 }
 
-// Función auxiliar para dibujar una escena específica
 void dibujarEscena(int escena) {
   if (escena == 0) {
     if (fondoEscena1 != null) {
-      // Actualizar zoom
       if (zoomEscena1 > zoomMinimo) {
         zoomEscena1 -= velocidadZoom;
         zoomEscena1 = max(zoomEscena1, zoomMinimo);
@@ -391,7 +377,6 @@ void dibujarEscena(int escena) {
   }
 }
 
-// Función auxiliar para cargar imágenes
 PImage cargarImagenConDiagnostico(String nombre) {
   println("Cargando " + nombre + "...");
   PImage img = loadImage(nombre);
@@ -403,83 +388,69 @@ PImage cargarImagenConDiagnostico(String nombre) {
   return img;
 }
 
-// Función para limpiar recursos de audio al cerrar
 void stop() {
   if (cancion != null) {
     cancion.stop();
   }
 }
 
-// ===== CLASES AUXILIARES =====
+// ===== CLASES SIMPLIFICADAS =====
 
 class Rama {
   float x, y;
   float animacion;
   boolean activa;
-  float brillo;
+  float alpha;
   
   Rama(float x, float y) {
     this.x = x;
     this.y = y;
     this.animacion = random(TWO_PI);
     this.activa = true;
-    this.brillo = 255;
+    this.alpha = 255;
   }
   
   void update() {
     if (activa) {
-      animacion += 0.1;
-      
-      // Efecto de flotación
-      y += sin(animacion) * 0.5;
-      
-      // Efecto de brillo pulsante
-      brillo = 200 + sin(animacion * 2) * 55;
+      animacion += 0.08;
     } else {
-      // Fade out cuando se recolecta
-      brillo = max(0, brillo - 15);
+      alpha = max(0, alpha - 15);
     }
   }
   
   void display() {
-    if (activa || brillo > 0) {
+    if (activa || alpha > 0) {
       pushMatrix();
       translate(x, y + sin(animacion) * 3);
       
-      // Resplandor
-      fill(250, 220, 50, 50);
+      // Resplandor dorado
+      fill(250, 220, 50, 60);
       noStroke();
-      ellipse(0, 0, 60, 60);
+      ellipse(0, 0, 80, 80);
       
-      // Rama principal
-      strokeWeight(6);
-      stroke(139, 69, 19, brillo); // Color marrón
-      line(-20, 0, 20, 0);
-      
-      // Ramitas laterales
-      strokeWeight(3);
-      stroke(34, 139, 34, brillo); // Verde para las hojas
-      
-      // Hojitas
-      for (int i = 0; i < 6; i++) {
-        float angulo = (i * PI/3) + animacion * 0.5;
-        float longitud = 12 + sin(animacion + i) * 3;
-        float xHoja = cos(angulo) * longitud;
-        float yHoja = sin(angulo) * longitud;
+      // Dibujar imagen de rama si está cargada
+      if (imagenRama != null) {
+        tint(255, alpha);
+        imageMode(CENTER);
+        image(imagenRama, 0, 0);
+        noTint();
+      } else {
+        // Dibujar rama simple si no hay imagen
+        stroke(139, 69, 19, alpha);
+        strokeWeight(6);
+        strokeCap(ROUND);
+        line(-20, 0, 20, 0);
+        line(-10, -10, 10, 10);
+        line(-10, 10, 10, -10);
         
-        line(0, 0, xHoja, yHoja);
-        
-        // Pequeñas hojas al final
-        fill(34, 139, 34, brillo);
+        // Hojas simples
+        fill(34, 139, 34, alpha);
         noStroke();
-        ellipse(xHoja, yHoja, 8, 4);
+        ellipse(-15, -8, 12, 8);
+        ellipse(15, -8, 12, 8);
+        ellipse(-15, 8, 12, 8);
+        ellipse(15, 8, 12, 8);
       }
-      
-      // Brillo dorado central
-      fill(250, 220, 50, brillo);
-      stroke(255, 255, 150, brillo);
-      strokeWeight(2);
-      ellipse(0, 0, 15, 15);
       
       popMatrix();
     }
@@ -492,10 +463,9 @@ class ParticleEffect {
   
   ParticleEffect(float x, float y) {
     particulas = new ArrayList<Particle>();
-    vida = 60; // frames de duración
+    vida = 60;
     
-    // Crear partículas
-    for (int i = 0; i < 15; i++) {
+    for (int i = 0; i < 10; i++) {
       particulas.add(new Particle(x, y));
     }
   }
@@ -532,7 +502,7 @@ class Particle {
     this.x = x;
     this.y = y;
     float angulo = random(TWO_PI);
-    float velocidad = random(2, 8);
+    float velocidad = random(2, 6);
     this.vx = cos(angulo) * velocidad;
     this.vy = sin(angulo) * velocidad;
     this.vida = 30;
@@ -542,16 +512,16 @@ class Particle {
   void update() {
     x += vx;
     y += vy;
-    vy += 0.2; // Gravedad
+    vy += 0.2;
     vida--;
-    vx *= 0.98; // Fricción
+    vx *= 0.98;
   }
   
   void display() {
     float alpha = map(vida, 0, 30, 0, 255);
     fill(red(col), green(col), blue(col), alpha);
     noStroke();
-    ellipse(x, y, 5, 5);
+    ellipse(x, y, 4, 4);
   }
   
   boolean terminada() {
@@ -574,7 +544,6 @@ class BackgroundGif {
     for (int i = 0; i < 5; i++) {
       frames[i] = loadImage(nombre + (i+1) + ".png");
       if (frames[i] != null) {
-        // Ajustar tamaño para llenar la pantalla
         float imgRatio = (float)frames[i].width / frames[i].height;
         float screenRatio = (float)width / height;
         
@@ -587,7 +556,6 @@ class BackgroundGif {
           newHeight = (int)(width / imgRatio);
         }
         
-        // Aplicar escala
         newWidth = (int)(newWidth * escala);
         newHeight = (int)(newHeight * escala);
         
@@ -602,14 +570,8 @@ class BackgroundGif {
     if (frames[frameIndex] != null) {
       imageMode(CENTER);
       image(frames[frameIndex], width/2, height/2);
-      
-      // Actualizar frame con velocidad suave
       currentFrame = (currentFrame + velocidad) % frames.length;
     }
-  }
-  
-  void reset() {
-    currentFrame = 0;
   }
 }
 
@@ -628,7 +590,6 @@ class BirdAnimation {
     currentFrame = 0;
     anguloActual = 0;
     
-    // Cargar frames del pájaro
     println("Cargando frames del pájaro...");
     for (int i = 0; i < 5; i++) {
       frames[i] = cargarImagenConDiagnostico("pajaro" + (i+1) + ".png");
@@ -637,51 +598,46 @@ class BirdAnimation {
       }
     }
     
-    // Posición inicial
     reset();
   }
   
   void update() {
-    // Actualizar frame
     currentFrame = (currentFrame + 0.2) % frames.length;
     
-    // Aplicar velocidad
     x += velocidadX;
     y += velocidadY;
     
-    // Rebotar en los bordes - llegar exactamente al borde
+    // Rebotar en los bordes
     if (x <= tamano/2) {
       x = tamano/2;
-      velocidadX = abs(velocidadX);  // Forzar dirección positiva
+      velocidadX = abs(velocidadX);
     }
     if (x >= width - tamano/2) {
       x = width - tamano/2;
-      velocidadX = -abs(velocidadX);  // Forzar dirección negativa
+      velocidadX = -abs(velocidadX);
     }
     if (y <= tamano/2) {
       y = tamano/2;
-      velocidadY = abs(velocidadY);  // Forzar dirección positiva
+      velocidadY = abs(velocidadY);
     }
     if (y >= height - tamano/2) {
       y = height - tamano/2;
-      velocidadY = -abs(velocidadY);  // Forzar dirección negativa
+      velocidadY = -abs(velocidadY);
     }
     
-    // Mantener velocidad base constante
+    // Mantener velocidad constante
     float velocidadActual = sqrt(velocidadX*velocidadX + velocidadY*velocidadY);
     if (velocidadActual < 0.5) {
-      // Si se detiene demasiado, darle un impulso aleatorio
       float angulo = random(TWO_PI);
       velocidadX = cos(angulo) * velocidadBase;
       velocidadY = sin(angulo) * velocidadBase;
     } else if (velocidadActual != velocidadBase) {
-      // Normalizar velocidad para mantenerla constante
       float factor = velocidadBase / velocidadActual;
       velocidadX *= factor;
       velocidadY *= factor;
     }
     
-    // Actualizar ángulo suavemente
+    // Actualizar ángulo
     if (abs(velocidadX) > 0.1 || abs(velocidadY) > 0.1) {
       float anguloObjetivo = atan2(velocidadY, velocidadX);
       float diferencia = anguloObjetivo - anguloActual;
