@@ -1,8 +1,7 @@
-// Código simplificado para la Visualización del Poema "Viajar" de Gabriel Gamar
-// Modo recolección de ramas - versión simplificada
+// Código mejorado para la Visualización del Poema "Viajar" de Gabriel Gamar
 
 // Variables para las imágenes de fondo
-PImage fondoEscena1;  // Escena 1: imagen única con zoom
+PImage fondoEscena1;
 
 // GIFs de fondo para cada escena
 BackgroundGif gifTinta;
@@ -25,7 +24,7 @@ float velocidadZoom = 0.008;
 ArrayList<Rama> ramas;
 int ramasNecesarias = 5;
 int ramasRecolectadas = 0;
-PImage imagenRama;  // Imagen simple para las ramas
+PImage imagenRama;
 
 // Variables para transiciones
 float alpha = 0;
@@ -40,11 +39,6 @@ float radioInfluencia = 150;
 import processing.sound.*;
 SoundFile cancion;
 
-// Instrucciones
-String instruccion = "Guía al pájaro con el mouse para recoger las ramas doradas";
-boolean mostrarInstruccion = true;
-float tiempoInstruccion = 5;
-
 // Variables para las estrofas del poema
 String[] estrofas;
 
@@ -55,6 +49,12 @@ PFont fuentePoema;
 
 // Variables para efectos visuales
 ArrayList<ParticleEffect> efectos;
+
+// Variables para pantalla de carga
+boolean pantallaInicial = true;
+boolean juegoIniciado = false;
+PFont fuenteTitulo, fuenteInstrucciones;
+float parpadeoBoton = 0;
 
 void cargarPoema() {
   estrofas = new String[totalEscenas];
@@ -104,8 +104,7 @@ void setup() {
   // Inicializar sistema de audio
   try {
     cancion = new SoundFile(this, "Das Versprechen.mp3");
-    cancion.loop();
-    println("Música cargada y reproduciéndose");
+    println("Música cargada correctamente");
   } catch (Exception e) {
     println("No se pudo cargar la música");
   }
@@ -114,10 +113,10 @@ void setup() {
   cargarPoema();
   setupTexto();
   
-  // Cargar imagen de rama (archivo simple: "rama.png")
+  // Cargar imagen de rama
   imagenRama = cargarImagenConDiagnostico("rama.png");
   if (imagenRama != null) {
-    imagenRama.resize(60, 60); // Tamaño fijo para simplicidad
+    imagenRama.resize(60, 60);
   }
   
   // Cargar imagen única para escena 1
@@ -144,38 +143,29 @@ void setup() {
 void draw() {
   background(0);
   
-  if (!enTransicion) {
+  if (pantallaInicial) {
+    mostrarPantallaInicial();
+  } else if (!enTransicion) {
     // Dibujar fondo según la escena actual
     dibujarEscena(escenaActual);
     
-    // Dibujar y actualizar ramas
-    actualizarRamas();
-    
-    // Actualizar y dibujar pájaro
-    pajaro.update();
-    pajaro.evadirMouse(mouseX, mouseY, radioInfluencia);
-    pajaro.display();
-    
-    // Verificar colisiones entre pájaro y ramas
-    verificarColisiones();
-    
-    // Actualizar y dibujar efectos de partículas
-    actualizarEfectos();
-    
-    // Mostrar texto del poema en la parte inferior
-    mostrarEstrofa();
-    
-    // Mostrar instrucción si es necesario
-    if (mostrarInstruccion) {
-      if (tiempoInstruccion > 0) {
-        fill(255, 200);
-        textAlign(CENTER, TOP);
-        textSize(16);
-        text(instruccion, width/2, 20);
-        tiempoInstruccion -= 1.0/frameRate;
-      } else {
-        mostrarInstruccion = false;
-      }
+    if (juegoIniciado) {
+      // Dibujar y actualizar ramas
+      actualizarRamas();
+      
+      // Actualizar y dibujar pájaro
+      pajaro.update();
+      pajaro.evadirMouse(mouseX, mouseY, radioInfluencia);
+      pajaro.display();
+      
+      // Verificar colisiones entre pájaro y ramas
+      verificarColisiones();
+      
+      // Actualizar y dibujar efectos de partículas
+      actualizarEfectos();
+      
+      // Mostrar texto del poema en la parte inferior
+      mostrarEstrofa();
     }
   } else {
     // Dibujar transición
@@ -195,14 +185,176 @@ void draw() {
         escenaActual = siguienteEscena;
         alpha = 0;
         ramasRecolectadas = 0;
-        generarRamas();
+        
+        // Si completamos todas las escenas, volver al inicio
+        if (escenaActual >= totalEscenas) {
+          escenaActual = 0;
+          pantallaInicial = true;
+          juegoIniciado = false;
+          if (cancion != null) {
+            cancion.stop();
+          }
+        } else {
+          generarRamas();
+        }
       }
     }
   }
 }
 
+void mostrarPantallaInicial() {
+  // Mostrar fondo de la escena 1 con zoom fijo
+  if (fondoEscena1 != null) {
+    float anchoZoom = width * zoomEscena1;
+    float altoZoom = height * zoomEscena1;
+    imageMode(CENTER);
+    image(fondoEscena1, width/2, height/2, anchoZoom, altoZoom);
+  }
+  
+  // Overlay semi-transparente con gradiente
+  noStroke();
+  for (int y = 0; y < height; y++) {
+    float inter = map(y, 0, height, 0.3, 0.8);
+    fill(0, inter * 180);
+    rect(0, y, width, 1);
+  }
+  
+  // TÍTULO DEL POEMA con sombra
+  textFont(fuenteTitulo);
+  textAlign(CENTER, CENTER);
+  
+  // Sombra del título
+  fill(0, 200);
+  for (int j = 0; j < 360; j += 45) {
+    float rad = radians(j);
+    textSize(52);
+    text("VIAJAR", 
+         width/2 + cos(rad) * 3,
+         height/2 - 120 + sin(rad) * 3);
+  }
+  
+  // Título principal
+  fill(255, 255, 255);
+  textSize(52);
+  text("VIAJAR", width/2, height/2 - 120);
+  
+  // Sombra del autor
+  fill(0, 150);
+  for (int j = 0; j < 360; j += 45) {
+    float rad = radians(j);
+    textSize(22);
+    text("por Gabriel Gamar", 
+         width/2 + cos(rad) * 2,
+         height/2 - 80 + sin(rad) * 2);
+  }
+  
+  // Autor
+  textSize(22);
+  fill(220, 220, 220);
+  text("por Gabriel Gamar", width/2, height/2 - 80);
+  
+  // BOTÓN PLAY
+  parpadeoBoton += 0.1;
+  float alphaBoton = 200 + sin(parpadeoBoton) * 55;
+  
+  // Fondo del botón con glow
+  fill(50, 150, 250, alphaBoton * 0.3);
+  noStroke();
+  ellipse(width/2, height/2, 240, 80);
+  
+  fill(50, 150, 250, alphaBoton * 0.8);
+  stroke(255, alphaBoton);
+  strokeWeight(3);
+  rectMode(CENTER);
+  rect(width/2, height/2, 200, 60, 15);
+  
+  // Sombra del texto del botón
+  fill(0, alphaBoton * 0.8);
+  noStroke();
+  textFont(fuentePoema);
+  textSize(24);
+  for (int j = 0; j < 360; j += 90) {
+    float rad = radians(j);
+    text("▶ COMENZAR", 
+         width/2 + cos(rad) * 2,
+         height/2 + sin(rad) * 2);
+  }
+  
+  // Texto del botón
+  fill(255, alphaBoton);
+  text("▶ COMENZAR", width/2, height/2);
+  
+  // INSTRUCCIONES con sombra
+  textFont(fuenteInstrucciones);
+  textAlign(CENTER, CENTER);
+  textSize(16);
+  
+  String instrucciones = "INSTRUCCIONES:\n\n" +
+                        "• Guía al pájaro con el cursor del mouse\n" +
+                        "• El pájaro evadirá tu cursor automáticamente\n" +
+                        "• Recolecta las ramas doradas para revelar los versos\n" +
+                        "• Cada rama recolectada muestra una línea del poema\n" +
+                        "• Completa cada escena para avanzar a la siguiente\n" +
+                        "• Disfruta del viaje poético a través de 5 escenas";
+  
+  // Sombra de las instrucciones
+  fill(0, 180);
+  for (int j = 0; j < 360; j += 90) {
+    float rad = radians(j);
+    text(instrucciones, 
+         width/2 + cos(rad) * 2,
+         height/2 + 120 + sin(rad) * 2);
+  }
+  
+  // Texto principal de instrucciones
+  fill(240, 240, 240);
+  text(instrucciones, width/2, height/2 + 120);
+  
+  // Indicación adicional con sombra
+  textSize(14);
+  
+  // Sombra
+  fill(0, 150);
+  for (int j = 0; j < 360; j += 90) {
+    float rad = radians(j);
+    text("Haz clic en COMENZAR para iniciar la experiencia", 
+         width/2 + cos(rad) * 1,
+         height - 40 + sin(rad) * 1);
+  }
+  
+  // Texto principal
+  fill(200, 200, 200);
+  text("Haz clic en COMENZAR para iniciar la experiencia", width/2, height - 40);
+}
+
+void mousePressed() {
+  if (pantallaInicial) {
+    // Verificar si se hizo clic en el botón
+    if (mouseX > width/2 - 100 && mouseX < width/2 + 100 &&
+        mouseY > height/2 - 30 && mouseY < height/2 + 30) {
+      pantallaInicial = false;
+      juegoIniciado = true;
+      
+      // Iniciar música
+      if (cancion != null) {
+        cancion.loop();
+      }
+      
+      // Resetear variables del juego
+      escenaActual = 0;
+      ramasRecolectadas = 0;
+      generarRamas();
+      pajaro.reset();
+      opacidadTexto = 0;
+      targetOpacidadTexto = 255;
+    }
+  }
+}
+
 void setupTexto() {
-  fuentePoema = createFont("Georgia", 20);
+  fuentePoema = createFont("Georgia", 24, true);
+  fuenteTitulo = createFont("Georgia", 48, true);
+  fuenteInstrucciones = createFont("Arial", 16, true);
 }
 
 void mostrarEstrofa() {
@@ -227,32 +379,27 @@ void mostrarEstrofa() {
   textFont(fuentePoema);
   textAlign(CENTER, CENTER);
   
-  // Mostrar solo los versos recolectados (progreso visual)
+  // Mostrar solo los versos recolectados
   float yTexto = height - 130;
   float espaciadoLinea = 22;
   
   for (int i = 0; i < versos.length; i++) {
     if (i < ramasRecolectadas) {
-      // Verso visible - color dorado brillante
-      // Sombra
-      fill(0, 150 * (opacidadTexto/255.0));
-      text(versos[i], width/2 + 2, yTexto + 2);
+      // Sombra negra para contraste
+      fill(0, 200 * (opacidadTexto/255.0));
+      for (int j = 0; j < 360; j += 45) {
+        float rad = radians(j);
+        text(versos[i], 
+             width/2 + cos(rad) * 2,
+             yTexto + sin(rad) * 2);
+      }
       
-      // Texto principal
-      fill(250, 220, 50, opacidadTexto);
+      // Texto principal blanco brillante
+      fill(255, 255, 255, opacidadTexto);
       text(versos[i], width/2, yTexto);
-    } else {
-      // Verso no visible - completamente oculto
-      // No se muestra nada
     }
     yTexto += espaciadoLinea;
   }
-  
-  // Mostrar contador en esquina superior derecha
-  fill(255, 255, 255, 200);
-  textAlign(RIGHT, TOP);
-  textSize(16);
-  text("Versos revelados: " + ramasRecolectadas + "/" + versos.length, width - 20, 20);
 }
 
 String[] dividirEnVersos(String estrofa) {
@@ -274,7 +421,7 @@ void generarRamas() {
     
     do {
       x = random(60, width - 60);
-      y = random(60, height - 200); // Evitar la zona del texto
+      y = random(60, height - 200);
       posicionValida = true;
       
       // Verificar que no esté muy cerca de otras ramas
@@ -298,8 +445,7 @@ void generarRamas() {
 }
 
 void actualizarRamas() {
-  for (int i = ramas.size() - 1; i >= 0; i--) {
-    Rama rama = ramas.get(i);
+  for (Rama rama : ramas) {
     rama.update();
     rama.display();
   }
@@ -319,16 +465,11 @@ void verificarColisiones() {
       
       // Verificar si se completó la escena
       if (ramasRecolectadas >= ramasNecesarias) {
-        siguienteEscena = (escenaActual + 1) % totalEscenas;
+        siguienteEscena = (escenaActual + 1);
         enTransicion = true;
         alpha = 0;
         opacidadTexto = 0;
         targetOpacidadTexto = 255;
-        
-        if (siguienteEscena != 0) {
-          mostrarInstruccion = true;
-          tiempoInstruccion = 3;
-        }
       }
     }
   }
@@ -349,7 +490,7 @@ void actualizarEfectos() {
 void dibujarEscena(int escena) {
   if (escena == 0) {
     if (fondoEscena1 != null) {
-      if (zoomEscena1 > zoomMinimo) {
+      if (zoomEscena1 > zoomMinimo && juegoIniciado) {
         zoomEscena1 -= velocidadZoom;
         zoomEscena1 = max(zoomEscena1, zoomMinimo);
       }
@@ -434,22 +575,6 @@ class Rama {
         imageMode(CENTER);
         image(imagenRama, 0, 0);
         noTint();
-      } else {
-        // Dibujar rama simple si no hay imagen
-        stroke(139, 69, 19, alpha);
-        strokeWeight(6);
-        strokeCap(ROUND);
-        line(-20, 0, 20, 0);
-        line(-10, -10, 10, 10);
-        line(-10, 10, 10, -10);
-        
-        // Hojas simples
-        fill(34, 139, 34, alpha);
-        noStroke();
-        ellipse(-15, -8, 12, 8);
-        ellipse(15, -8, 12, 8);
-        ellipse(-15, 8, 12, 8);
-        ellipse(15, 8, 12, 8);
       }
       
       popMatrix();
