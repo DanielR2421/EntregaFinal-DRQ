@@ -1,4 +1,5 @@
-// Código corregido para la Visualización del Poema "Viajar" de Gabriel Gamar
+// Código modificado para la Visualización del Poema "Viajar" de Gabriel Gamar
+// Modo recolección de ramas al estilo Mario Bros
 
 // Variables para las imágenes de fondo
 PImage fondoEscena1;  // Escena 1: imagen única con zoom
@@ -20,9 +21,10 @@ float zoomEscena1 = 2.5;
 float zoomMinimo = 1.0;
 float velocidadZoom = 0.008;
 
-// Variables para los símbolos interactivos
-float[][] posicionesSimbolo;
-int tamanoSimbolo = 30;
+// Variables para las ramas recolectables
+ArrayList<Rama> ramas;
+int ramasNecesarias = 5;  // Ramas que se necesitan recoger por escena
+int ramasRecolectadas = 0;
 
 // Variables para transiciones
 float alpha = 0;  // Opacidad para fade
@@ -39,7 +41,7 @@ import processing.sound.*;
 SoundFile cancion;
 
 // Instrucciones
-String instruccion = "Haz clic en el círculo dorado para continuar";
+String instruccion = "Guía al pájaro con el mouse para recoger las ramas doradas";
 boolean mostrarInstruccion = true;
 float tiempoInstruccion = 5;  // segundos que se muestra
 
@@ -50,6 +52,9 @@ String[] estrofas;
 float opacidadTexto = 0;
 float targetOpacidadTexto = 255;
 PFont fuentePoema;
+
+// Variables para efectos visuales
+ArrayList<ParticleEffect> efectos;
 
 void cargarPoema() {
   estrofas = new String[totalEscenas];
@@ -125,12 +130,10 @@ void setup() {
   // Crear pájaro animado
   pajaro = new BirdAnimation(80);  // Tamaño del pájaro: 80 píxeles
   
-  // Inicializar símbolos
-  posicionesSimbolo = new float[totalEscenas][2];
-  for (int i = 0; i < totalEscenas; i++) {
-    posicionesSimbolo[i][0] = width - 50;  // X
-    posicionesSimbolo[i][1] = height - 50;  // Y
-  }
+  // Inicializar sistema de ramas y efectos
+  ramas = new ArrayList<Rama>();
+  efectos = new ArrayList<ParticleEffect>();
+  generarRamas();
 }
 
 void draw() {
@@ -140,16 +143,25 @@ void draw() {
     // Dibujar fondo según la escena actual
     dibujarEscena(escenaActual);
     
-    // Dibujar símbolos interactivos
-    dibujarSimbolos();
+    // Dibujar y actualizar ramas
+    actualizarRamas();
     
     // Actualizar y dibujar pájaro
     pajaro.update();
     pajaro.evadirMouse(mouseX, mouseY, radioInfluencia);
     pajaro.display();
     
+    // Verificar colisiones entre pájaro y ramas
+    verificarColisiones();
+    
+    // Actualizar y dibujar efectos de partículas
+    actualizarEfectos();
+    
     // Mostrar texto
     mostrarEstrofa();
+    
+    // Mostrar contador de ramas
+    mostrarContador();
     
     // Mostrar instrucción si es necesario
     if (mostrarInstruccion) {
@@ -183,12 +195,13 @@ void draw() {
         enTransicion = false;
         escenaActual = siguienteEscena;
         alpha = 0;
+        
+        // Reiniciar sistema de ramas para la nueva escena
+        ramasRecolectadas = 0;
+        generarRamas();
       }
     }
   }
-  
-  // Actualizar interacción con el mouse
-  interactuarConMouse();
 }
 
 void setupTexto() {
@@ -229,98 +242,119 @@ void mostrarEstrofa() {
   text(estrofas[escenaActual], width/2, height - 100);
 }
 
-void mousePressed() {
-  // Verificar si se hace clic en el símbolo
-  float distancia = dist(mouseX, mouseY, 
-                         posicionesSimbolo[escenaActual][0], 
-                         posicionesSimbolo[escenaActual][1]);
+void mostrarContador() {
+  // Mostrar progreso de recolección
+  fill(255, 220);
+  textAlign(RIGHT, TOP);
+  textSize(18);
+  text("Ramas: " + ramasRecolectadas + "/" + ramasNecesarias, width - 20, 20);
   
-  if (distancia < tamanoSimbolo && !enTransicion) {
-    // Iniciar transición a la siguiente escena
-    siguienteEscena = (escenaActual + 1) % totalEscenas;
-    enTransicion = true;
-    alpha = 0;
+  // Barra de progreso
+  float progreso = (float)ramasRecolectadas / ramasNecesarias;
+  float anchoTotal = 200;
+  float x = width - anchoTotal - 20;
+  float y = 50;
+  
+  // Fondo de la barra
+  fill(0, 100);
+  rect(x, y, anchoTotal, 15);
+  
+  // Progreso
+  fill(250, 220, 50);
+  rect(x, y, anchoTotal * progreso, 15);
+  
+  // Borde
+  noFill();
+  stroke(255);
+  strokeWeight(1);
+  rect(x, y, anchoTotal, 15);
+}
+
+void generarRamas() {
+  ramas.clear();
+  
+  // Generar ramas distribuidas por la pantalla
+  for (int i = 0; i < ramasNecesarias; i++) {
+    float x, y;
+    boolean posicionValida;
+    int intentos = 0;
     
-    // Reiniciar el texto
-    opacidadTexto = 0;
-    targetOpacidadTexto = 255;
+    do {
+      x = random(60, width - 60);
+      y = random(60, height - 180); // Evitar la zona del texto
+      posicionValida = true;
+      
+      // Verificar que no esté muy cerca de otras ramas
+      for (Rama rama : ramas) {
+        if (dist(x, y, rama.x, rama.y) < 80) {
+          posicionValida = false;
+          break;
+        }
+      }
+      
+      // Verificar que no esté muy cerca del pájaro
+      if (dist(x, y, pajaro.x, pajaro.y) < 100) {
+        posicionValida = false;
+      }
+      
+      intentos++;
+    } while (!posicionValida && intentos < 50);
     
-    // Reiniciar instrucción
-    if (siguienteEscena != 0) {
-      mostrarInstruccion = true;
-      tiempoInstruccion = 3;
+    ramas.add(new Rama(x, y));
+  }
+}
+
+void actualizarRamas() {
+  for (int i = ramas.size() - 1; i >= 0; i--) {
+    Rama rama = ramas.get(i);
+    rama.update();
+    rama.display();
+  }
+}
+
+void verificarColisiones() {
+  for (int i = ramas.size() - 1; i >= 0; i--) {
+    Rama rama = ramas.get(i);
+    float distancia = dist(pajaro.x, pajaro.y, rama.x, rama.y);
+    
+    if (distancia < 40 && rama.activa) { // Radio de colisión
+      // Rama recolectada
+      rama.activa = false;
+      ramasRecolectadas++;
+      
+      // Crear efecto de partículas
+      efectos.add(new ParticleEffect(rama.x, rama.y));
+      
+      // Verificar si se completó la escena
+      if (ramasRecolectadas >= ramasNecesarias) {
+        // Iniciar transición a la siguiente escena
+        siguienteEscena = (escenaActual + 1) % totalEscenas;
+        enTransicion = true;
+        alpha = 0;
+        
+        // Reiniciar el texto
+        opacidadTexto = 0;
+        targetOpacidadTexto = 255;
+        
+        // Reiniciar instrucción
+        if (siguienteEscena != 0) {
+          mostrarInstruccion = true;
+          tiempoInstruccion = 3;
+        }
+      }
     }
   }
 }
 
-void dibujarSimbolos() {
-  // Dibujar símbolo actual
-  float x = posicionesSimbolo[escenaActual][0];
-  float y = posicionesSimbolo[escenaActual][1];
-  
-  float distancia = dist(mouseX, mouseY, x, y);
-  
-  // Cambiar apariencia si el mouse está cerca
-  if (distancia < tamanoSimbolo) {
-    fill(250, 220, 50, 200);  // Más transparente
-    strokeWeight(3);
-  } else {
-    fill(250, 220, 50);
-    strokeWeight(2);
-  }
-  
-  // Dibujar símbolo
-  pushMatrix();
-  translate(x, y);
-  
-  fill(250, 220, 50);
-  stroke(200, 150, 0);
-  strokeWeight(2);
-  
-  switch(escenaActual) {
-    case 0: // Casa
-      rect(-15, -5, 30, 20);
-      triangle(-15, -5, 15, -5, 0, -20);
-      break;
-    case 1: // Copa
-      triangle(-10, 0, 10, 0, 0, 15);
-      line(0, 15, 0, 20);
-      ellipse(0, -5, 20, 10);
-      break;
-    case 2: // Carta
-      rect(-15, -10, 30, 20);
-      line(-10, -5, 10, -5);
-      line(-10, 0, 5, 0);
-      line(-10, 5, 0, 5);
-      break;
-    case 3: // Mano
-      ellipse(0, 0, 15, 15);
-      for (int i = 0; i < 5; i++) {
-        float angulo = PI/2 - PI/8 * i;
-        line(0, 0, cos(angulo) * 15, sin(angulo) * 15);
-      }
-      break;
-    case 4: // Postal
-      rect(-15, -10, 30, 20);
-      line(-10, -5, 10, -5);
-      rect(-10, 0, 5, 5);
-      break;
-  }
-  
-  popMatrix();
-}
-
-void interactuarConMouse() {
-  // Calcular distancia al símbolo actual
-  float distancia = dist(mouseX, mouseY, 
-                         posicionesSimbolo[escenaActual][0], 
-                         posicionesSimbolo[escenaActual][1]);
-  
-  // Cambiar cursor si está cerca del símbolo
-  if (distancia < tamanoSimbolo) {
-    cursor(HAND);
-  } else {
-    cursor(ARROW);
+void actualizarEfectos() {
+  for (int i = efectos.size() - 1; i >= 0; i--) {
+    ParticleEffect efecto = efectos.get(i);
+    efecto.update();
+    efecto.display();
+    
+    if (efecto.terminado()) {
+      efectos.remove(i);
+    }
   }
 }
 
@@ -377,6 +411,153 @@ void stop() {
 }
 
 // ===== CLASES AUXILIARES =====
+
+class Rama {
+  float x, y;
+  float animacion;
+  boolean activa;
+  float brillo;
+  
+  Rama(float x, float y) {
+    this.x = x;
+    this.y = y;
+    this.animacion = random(TWO_PI);
+    this.activa = true;
+    this.brillo = 255;
+  }
+  
+  void update() {
+    if (activa) {
+      animacion += 0.1;
+      
+      // Efecto de flotación
+      y += sin(animacion) * 0.5;
+      
+      // Efecto de brillo pulsante
+      brillo = 200 + sin(animacion * 2) * 55;
+    } else {
+      // Fade out cuando se recolecta
+      brillo = max(0, brillo - 15);
+    }
+  }
+  
+  void display() {
+    if (activa || brillo > 0) {
+      pushMatrix();
+      translate(x, y + sin(animacion) * 3);
+      
+      // Resplandor
+      fill(250, 220, 50, 50);
+      noStroke();
+      ellipse(0, 0, 60, 60);
+      
+      // Rama principal
+      strokeWeight(6);
+      stroke(139, 69, 19, brillo); // Color marrón
+      line(-20, 0, 20, 0);
+      
+      // Ramitas laterales
+      strokeWeight(3);
+      stroke(34, 139, 34, brillo); // Verde para las hojas
+      
+      // Hojitas
+      for (int i = 0; i < 6; i++) {
+        float angulo = (i * PI/3) + animacion * 0.5;
+        float longitud = 12 + sin(animacion + i) * 3;
+        float xHoja = cos(angulo) * longitud;
+        float yHoja = sin(angulo) * longitud;
+        
+        line(0, 0, xHoja, yHoja);
+        
+        // Pequeñas hojas al final
+        fill(34, 139, 34, brillo);
+        noStroke();
+        ellipse(xHoja, yHoja, 8, 4);
+      }
+      
+      // Brillo dorado central
+      fill(250, 220, 50, brillo);
+      stroke(255, 255, 150, brillo);
+      strokeWeight(2);
+      ellipse(0, 0, 15, 15);
+      
+      popMatrix();
+    }
+  }
+}
+
+class ParticleEffect {
+  ArrayList<Particle> particulas;
+  float vida;
+  
+  ParticleEffect(float x, float y) {
+    particulas = new ArrayList<Particle>();
+    vida = 60; // frames de duración
+    
+    // Crear partículas
+    for (int i = 0; i < 15; i++) {
+      particulas.add(new Particle(x, y));
+    }
+  }
+  
+  void update() {
+    vida--;
+    for (int i = particulas.size() - 1; i >= 0; i--) {
+      Particle p = particulas.get(i);
+      p.update();
+      if (p.terminada()) {
+        particulas.remove(i);
+      }
+    }
+  }
+  
+  void display() {
+    for (Particle p : particulas) {
+      p.display();
+    }
+  }
+  
+  boolean terminado() {
+    return vida <= 0 && particulas.size() == 0;
+  }
+}
+
+class Particle {
+  float x, y;
+  float vx, vy;
+  float vida;
+  color col;
+  
+  Particle(float x, float y) {
+    this.x = x;
+    this.y = y;
+    float angulo = random(TWO_PI);
+    float velocidad = random(2, 8);
+    this.vx = cos(angulo) * velocidad;
+    this.vy = sin(angulo) * velocidad;
+    this.vida = 30;
+    this.col = color(random(200, 255), random(180, 220), random(0, 100));
+  }
+  
+  void update() {
+    x += vx;
+    y += vy;
+    vy += 0.2; // Gravedad
+    vida--;
+    vx *= 0.98; // Fricción
+  }
+  
+  void display() {
+    float alpha = map(vida, 0, 30, 0, 255);
+    fill(red(col), green(col), blue(col), alpha);
+    noStroke();
+    ellipse(x, y, 5, 5);
+  }
+  
+  boolean terminada() {
+    return vida <= 0;
+  }
+}
 
 class BackgroundGif {
   PImage[] frames;
