@@ -1,5 +1,7 @@
 // Código Finalizado para la Visualización del Poema "Viajar" de Gabriel Gamar
 // Variables para las imágenes de fondo; las imagenese de fondo yo las dibuje en illustrator con ayuda de la ia, o calco de imagen la cual des pues yo edite para que se adaptara a mi concepto
+// El programa se demora un poco en iniciar porque es algo pesado
+//La calidad de la vizualización es terrible por alguna razón desde la ultima actualización de processing, no rederiza bien la imagenes pero no entindo porque
 PImage fondoEscena1;
 
 // GIFs de fondo para cada escena; Para entender el funcionamiento de los gifs me ayudo una amiga de otra sección, al igual que la ia porque tiene que funcionar como una animación stop motion
@@ -327,14 +329,14 @@ void mostrarPantallaInicial() {
   textSize(24);
   for (int j = 0; j < 360; j += 90) {
     float rad = radians(j);
-    text("▶ COMENZAR", 
+    text("COMENZAR", 
          width/2 + cos(rad) * 2,
          height/2 + sin(rad) * 2);
   }
   
   // Texto del botón
   fill(255, alphaBoton);
-  text("▶ COMENZAR", width/2, height/2);
+  text("COMENZAR", width/2, height/2);
   
   // INSTRUCCIONES con sombra
   textFont(fuenteInstrucciones);
