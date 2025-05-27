@@ -1,9 +1,8 @@
-// Código mejorado para la Visualización del Poema "Viajar" de Gabriel Gamar
-
-// Variables para las imágenes de fondo
+// Código Finalizado para la Visualización del Poema "Viajar" de Gabriel Gamar
+// Variables para las imágenes de fondo; las imagenese de fondo yo las dibuje en illustrator con ayuda de la ia, o calco de imagen la cual des pues yo edite para que se adaptara a mi concepto
 PImage fondoEscena1;
 
-// GIFs de fondo para cada escena
+// GIFs de fondo para cada escena; Para entender el funcionamiento de los gifs me ayudo una amiga de otra sección, al igual que la ia porque tiene que funcionar como una animación stop motion
 BackgroundGif gifTinta;
 BackgroundGif gifBosque;
 BackgroundGif gifMontana;
@@ -12,6 +11,7 @@ BackgroundGif gifPajaros;
 // Pájaro animado
 BirdAnimation pajaro;
 
+//VAribales del numero total de escenas
 int escenaActual = 0;
 int totalEscenas = 5;
 
@@ -26,16 +26,16 @@ int ramasNecesarias = 5;
 int ramasRecolectadas = 0;
 PImage imagenRama;
 
-// Variables para transiciones
+// Variables para transiciones (esto me ayudo la ia para facilitarme el trabajo
 float alpha = 0;
 boolean enTransicion = false;
 int siguienteEscena = 0;
 float velocidadTransicion = 10;
 
-// Variables para interacción con mouse
+// Variables para interacción con mouse; la ia me ayudo con esto para que se viera fluido y sin errores
 float radioInfluencia = 150;
 
-// Variables para música
+// Variables para música; esto me base en la entrega 5 del sonido para darle ambientar el poema con una musica que fuera siguiera esta tematica poetica
 import processing.sound.*;
 SoundFile cancion;
 
@@ -47,10 +47,10 @@ float opacidadTexto = 0;
 float targetOpacidadTexto = 255;
 PFont fuentePoema;
 
-// Variables para efectos visuales
+// Variables para efectos visuales; para esto me ayudo la ia ya que es un efecto visual para volver mas interactivo el funcionamiento del programa
 ArrayList<ParticleEffect> efectos;
 
-// Variables para pantalla de carga
+// Variables para pantalla de carga; la ia me ayudo a cuadrar la funcion de la fuente porque si no yo no pude cuadrar la fuente que me cuadrara con la estetica de programa
 boolean pantallaInicial = true;
 boolean juegoIniciado = false;
 PFont fuenteTitulo, fuenteInstrucciones;
@@ -61,6 +61,7 @@ boolean mostrandoFin = false;
 float tiempoFin = 0;
 float duracionFin = 180; // 3 segundos a 60fps
 
+//Este es el void para cada escena de poema el cual se relaciona con cada una de las 5 estofas
 void cargarPoema() {
   estrofas = new String[totalEscenas];
   estrofas[0] = "Viajar es marcharse de casa,\n" +
@@ -104,7 +105,7 @@ void setup() {
   imageMode(CENTER);
   smooth(4);
   
-  // Inicializar sistema de audio
+  // Inicializar sistema de audio; me base en mi entrega 5; aunque el verificador catch me lo ayudo a cuadrar la ai para verificar el funcionamiento correcto del archivo de la canción; esto mismo aplica para las imagenes ya que son demasiados archivos los que permiten ejecutar los gifs por lo que la ia me ayudo a cuadrarlos de mejor manera
   try {
     cancion = new SoundFile(this, "Das Versprechen.mp3");
   } catch (Exception e) {
@@ -127,16 +128,16 @@ void setup() {
     fondoEscena1.resize(width, height);
   }
   
-  // Cargar fondos animados
+  // Cargar fondos animados; la ia y una amiga de otra seccion me explicaron como se pueden transformar la imagenes en gifs tipo stop motion; los numero de abajo son el zoom que tienen las imagenes al para que cuadren en la pantalla al igual que cada cuanto rotan las imagenes para que se vea del tipo stop motion
   gifTinta = new BackgroundGif("tinta", 0.05, 1.0);
   gifBosque = new BackgroundGif("bosque", 0.08, 1.0);
   gifMontana = new BackgroundGif("montana", 0.1, 1.2);
   gifPajaros = new BackgroundGif("pajaros", 0.15, 1.1);
   
-  // Crear pájaro animado
+  // Crear pájaro animado; este pajaro sigue la misma dinamica que el fondo solo que se manipula con un evento del mouse; la ia me ayudo a perfeccionar el funcionamiento del pajaro porque en la pre entrega era muy trabado y precario
   pajaro = new BirdAnimation(80);
   
-  // Inicializar sistema de ramas y efectos
+  // Inicializar sistema de ramas y efectos; esto me lo ayudo a cuadrar la ia para que fuear similar a cuando uno recoje las mondas den algun videojuego de supermario, y con esto se van desbloqueando los versos del poema que permiten que uno avance
   ramas = new ArrayList<Rama>();
   efectos = new ArrayList<ParticleEffect>();
   generarRamas();
@@ -150,19 +151,19 @@ void draw() {
   } else if (mostrandoFin) {
     mostrarPantallaFin();
   } else if (!enTransicion) {
-    // Dibujar fondo según la escena actual
+    // Dibujo del fondo según la escena actual
     dibujarEscena(escenaActual);
     
     if (juegoIniciado) {
-      // Dibujar y actualizar ramas
+      // Dibujo y actualizacion de las ramas
       actualizarRamas();
       
-      // Actualizar y dibujar pájaro
+      // Actualizacion y dibujo del pájaro (para el stop motion
       pajaro.update();
       pajaro.evadirMouse(mouseX, mouseY, radioInfluencia);
       pajaro.display();
       
-      // Verificar colisiones entre pájaro y ramas
+      // Verificar colisiones entre pájaro y ramas; la ia me ayudo a cuadrar esto
       verificarColisiones();
       
       // Actualizar y dibujar efectos de partículas
@@ -172,7 +173,7 @@ void draw() {
       mostrarEstrofa();
     }
   } else {
-    // Dibujar transición
+    // Dibujar transición; la ia le ayudo a perfeccionar el funcinamiento de esta parte sin tanto problema
     if (alpha < 255) {
       dibujarEscena(escenaActual);
       fill(0, alpha);
@@ -218,6 +219,7 @@ void mostrarPantallaFin() {
     rect(0, y, width, 1);
   }
   
+ //Textos clave aparte de las estrofas y sus escenas 
   // TEXTO "FIN" con sombra estilo título
   textFont(fuenteTitulo);
   textAlign(CENTER, CENTER);
@@ -307,7 +309,7 @@ void mostrarPantallaInicial() {
   parpadeoBoton += 0.1;
   float alphaBoton = 200 + sin(parpadeoBoton) * 55;
   
-  // Fondo del botón con glow
+  // Fondo del botón con glow; esto es pura estetica
   fill(50, 150, 250, alphaBoton * 0.3);
   noStroke();
   ellipse(width/2, height/2, 240, 80);
@@ -577,7 +579,7 @@ void stop() {
   }
 }
 
-// ===== CLASES SIMPLIFICADAS =====
+// Clases de cada objeto interactivo
 
 class Rama {
   float x, y;
@@ -772,7 +774,7 @@ class BirdAnimation {
     x += velocidadX;
     y += velocidadY;
     
-    // Rebotar en los bordes
+    // Rebotar en los bordes; esto me lo ayudo a cuadrar mejor la ia porque en la pre entrega estaba mal cuadrado y era muy confuso y se trababa facil
     if (x <= tamano/2) {
       x = tamano/2;
       velocidadX = abs(velocidadX);
@@ -790,7 +792,7 @@ class BirdAnimation {
       velocidadY = -abs(velocidadY);
     }
     
-    // Mantener velocidad constante
+    // Mantener velocidad constante; esto tambien me lo ajusto la ia porque fue un dolor de cabeza ajustralo yo porque todos se me descuadraban
     float velocidadActual = sqrt(velocidadX*velocidadX + velocidadY*velocidadY);
     if (velocidadActual < 0.5) {
       float angulo = random(TWO_PI);
